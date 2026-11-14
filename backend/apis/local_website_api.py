@@ -204,8 +204,12 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
             path = "/views/index.html"
         elif request_path in ("/view/index.html",):
             path = "/views/index.html"
-        elif request_path in ("/local_website.css", "/view/local_website.css"):
-            path = "/views/local_website.css"
+        elif request_path in (
+            "/local_website.css",
+            "/view/local_website.css",
+            "/views/local_website.css",
+        ):
+            path = "/css/style.css"
         elif request_path in (
             "/local_website.js",
             "/controller/local_website.js",

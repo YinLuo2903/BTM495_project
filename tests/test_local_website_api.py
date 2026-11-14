@@ -102,7 +102,8 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
             page = response.read().decode("utf-8")
         with urlopen(self.base_url + "/controllers/local_website.js") as response:
             script = response.read().decode("utf-8")
-        with urlopen(self.base_url + "/views/local_website.css") as response:
+        with urlopen(self.base_url + "/css/style.css") as response:
+            self.assertEqual(response.headers.get_content_type(), "text/css")
             stylesheet = response.read().decode("utf-8")
         with urlopen(self.base_url + "/local_website.js") as response:
             legacy_script = response.read().decode("utf-8")
@@ -110,7 +111,7 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
             legacy_stylesheet = response.read().decode("utf-8")
 
         self.assertIn("Local dry-run website", page)
-        self.assertIn('href="/views/local_website.css"', page)
+        self.assertIn('href="/css/style.css"', page)
         self.assertIn('type="module" src="/controllers/local_website.js"', page)
         self.assertIn('id="login-form"', page)
         self.assertIn("login@example.com", page)
@@ -120,6 +121,10 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
         self.assertIn(".header", stylesheet)
         self.assertIn("/api/dashboard", legacy_script)
         self.assertIn(".header", legacy_stylesheet)
+        for legacy_path in ("/view/local_website.css", "/views/local_website.css"):
+            with self.subTest(path=legacy_path):
+                with urlopen(self.base_url + legacy_path) as response:
+                    self.assertEqual(response.read().decode("utf-8"), stylesheet)
         self.assertIn("/api/dashboard", script)
         for filename, expected in (
             ("auth_controller.js", "/api/login"),
@@ -158,6 +163,7 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
                     self.assertEqual(response.status, 200)
                     page = response.read().decode("utf-8")
                 self.assertIn(content, page)
+                self.assertIn('href="/css/style.css"', page)
                 self.assertIn("/controllers/customer_controller.js", page)
 
         with urlopen(self.base_url + "/controllers/customer_controller.js") as response:
@@ -165,6 +171,17 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
             controller = response.read().decode("utf-8")
         self.assertIn("/api/inventory", controller)
         self.assertIn("/api/events", controller)
+
+    def test_admin_pages_use_shared_stylesheet(self) -> None:
+        for filename in (
+            "index.html", "items.html", "inventory.html",
+            "orders.html", "events.html", "appointments.html",
+        ):
+            with self.subTest(page=filename):
+                with urlopen(f"{self.base_url}/views/admin/{filename}") as response:
+                    self.assertEqual(response.status, 200)
+                    page = response.read().decode("utf-8")
+                self.assertIn('href="/css/style.css"', page)
 
     def test_login_endpoint_calls_profile_login_and_returns_role(self) -> None:
         ManageProfile(self.database_path).createAccount(

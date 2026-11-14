@@ -88,6 +88,7 @@ your data.
 | Folder / file | Purpose |
 | --- | --- |
 | `frontend/views/` | Website page markup and styles |
+| `frontend/css/style.css` | Shared styles for all website pages |
 | `frontend/views/customer/` | Customer-facing pages; unsupported actions are labelled and disabled |
 | `frontend/views/admin/` | Admin views |
 | `backend/controllers/` | Browser-side JavaScript modules for the dashboard, login, orders and payments, inventory, and events |
