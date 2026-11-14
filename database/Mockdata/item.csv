@@ -1,0 +1,11 @@
+item_id,name,description,price,category,brand
+1,"Mountain Bike 29""","21-speed aluminum frame mountain bike with front suspension",649.99,Bikes,Trek
+2,Road Bike Carbon,Lightweight carbon fiber road bike with 22-speed drivetrain,2199.00,Bikes,Specialized
+3,Cycling Helmet,Ventilated adult helmet with adjustable fit and MIPS protection,79.95,Safety Gear,Giro
+4,Clipless Pedals,Dual-sided SPD pedals with adjustable release tension,59.99,Components,Shimano
+5,Tubeless Tire 700x28c,Puncture-resistant road tire for all-weather riding,54.50,Tires & Tubes,Continental
+6,Chain Lubricant 120ml,All-weather wet lube for smooth shifting and corrosion protection,11.99,Maintenance,Finish Line
+7,LED Bike Light Set,"USB-rechargeable front and rear lights, 400 lumens",39.99,Accessories,Cateye
+8,Floor Pump,High-pressure pump with gauge and dual valve head,49.00,Tools,Topeak
+9,Disc Brake Pads,Semi-metallic replacement pads for hydraulic disc brakes,24.95,Components,SRAM
+10,Hydration Backpack 2L,Lightweight cycling pack with 2L reservoir and storage pockets,89.99,Bags,CamelBak

@@ -1,0 +1,11 @@
+appointment_id,customer_id,appointmentTime,description,statusID
+1,1,2026-10-06 10:00:00,Annual tune-up for mountain bike,2
+2,3,2026-10-09 14:30:00,Brake pad replacement and adjustment,2
+3,5,2026-10-14 11:00:00,Flat tire repair and wheel truing,2
+4,2,2026-10-20 09:30:00,Bike fitting session,2
+5,7,2026-10-27 16:00:00,Drivetrain cleaning and chain replacement,3
+6,4,2026-11-10 13:00:00,Gear shifting adjustment,2
+7,6,2026-11-17 10:30:00,Winter bike prep and full inspection,1
+8,8,2026-11-19 15:00:00,Helmet fitting and accessory consultation,1
+9,9,2026-11-24 12:00:00,Road bike tune-up before storage,1
+10,10,2026-12-02 09:00:00,Tire and tube replacement,1
