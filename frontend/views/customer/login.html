@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Login | LPVR</title><link rel="stylesheet" href="/views/local_website.css"></head>
+  <body data-customer-page="login">
+    <main class="page customer-content">
+      <header class="header"><div><p class="eyebrow">LPVR BIKE SHOP</p><h1>Login</h1><p class="subtitle">Check your credentials in the local demo.</p></div></header>
+      <nav class="customer-nav" aria-label="Customer navigation"></nav>
+      <section class="card">
+        <h2>Test profile login</h2>
+        <p class="customer-notice">This checks credentials only; it does not sign you in or create a session.</p>
+        <p class="muted">Demo credentials: <code>login@example.com</code> / <code>1234</code></p>
+        <form id="login-form">
+          <label for="login-email">Email</label><input id="login-email" name="email" type="email" autocomplete="username" required>
+          <label for="login-password">Password</label><input id="login-password" name="password" type="password" autocomplete="current-password" required>
+          <p id="login-message" class="muted" role="status" aria-live="polite"></p><p id="login-error" class="error" role="alert" hidden></p>
+          <button id="login-button" type="submit">Test login</button>
+        </form>
+        <p><a href="signup.html">Create an account</a></p>
+      </section>
+    </main>
+    <script type="module" src="/controllers/customer_controller.js"></script>
+    <script type="module" src="/controllers/auth_controller.js"></script>
+  </body>
+</html>

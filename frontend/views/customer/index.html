@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Home | LPVR</title>
+    <link rel="stylesheet" href="/views/local_website.css">
+  </head>
+  <body data-customer-page="home">
+    <main class="page customer-content">
+      <header class="header"><div><p class="eyebrow">LPVR BIKE SHOP</p><h1>Welcome</h1><p class="subtitle">Explore items and community events.</p></div></header>
+      <nav class="customer-nav" aria-label="Customer navigation"></nav>
+      <section class="card"><h2>Featured items</h2><p class="muted">A selection from the local inventory.</p><p id="items-message" role="status">Loading items…</p><ul id="items-list" class="customer-list"></ul><a href="items.html">View all items</a></section>
+      <section class="card"><h2>Events</h2><p class="muted">Events available in the local demo. Dates are not available yet.</p><p id="events-message" role="status">Loading events…</p><ul id="events-list" class="customer-list"></ul><a href="events.html">View all events</a></section>
+      <p><a href="/">Return to the local demo</a></p>
+    </main>
+    <script type="module" src="/controllers/customer_controller.js"></script>
+  </body>
+</html>

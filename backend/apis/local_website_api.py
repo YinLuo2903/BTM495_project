@@ -28,6 +28,18 @@ from backend.utils.validators import string_value
 from database.sqlite_database import DB_PATH
 
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
+CONTROLLER_DIR = Path(__file__).resolve().parents[1] / "controllers"
+CONTROLLER_FILES = frozenset(
+    {
+        "local_website.js",
+        "auth_controller.js",
+        "order_controller.js",
+        "inventory_controller.js",
+        "event_controller.js",
+        "shared.js",
+        "customer_controller.js",
+    }
+)
 LOCAL_DEMO_LOGIN_EMAIL = "login@example.com"
 LOCAL_DEMO_LOGIN_PASSWORD = "1234"
 logger = get_logger(__name__)
@@ -185,6 +197,25 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
         self._request_logged = False
         self._response_status = 500
         super().__init__(*args, directory=str(FRONTEND_DIR), **kwargs)
+
+    def translate_path(self, path: str) -> str:
+        request_path = urlsplit(path).path
+        if request_path == "/":
+            path = "/views/index.html"
+        elif request_path in ("/view/index.html",):
+            path = "/views/index.html"
+        elif request_path in ("/local_website.css", "/view/local_website.css"):
+            path = "/views/local_website.css"
+        elif request_path in (
+            "/local_website.js",
+            "/controller/local_website.js",
+        ):
+            return str(CONTROLLER_DIR / "local_website.js")
+        elif request_path.startswith("/controllers/"):
+            filename = request_path.removeprefix("/controllers/")
+            if filename in CONTROLLER_FILES:
+                return str(CONTROLLER_DIR / filename)
+        return super().translate_path(path)
 
     def send_response(self, code: int, message: str | None = None) -> None:
         self._response_status = code

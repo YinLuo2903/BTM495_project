@@ -60,6 +60,13 @@ open, go to `http://localhost:8765/`.
 
 No real payment is made and card details are never stored.
 
+The [customer views](frontend/views/customer/index.html) are also available at
+`http://localhost:8765/views/customer/index.html`, linked from the local demo.
+They include a browsable catalog, event list, and credential check. Other
+customer pages are view scaffolds: signup, personal orders, cart, checkout,
+event registration, appointments, and profile editing are not yet available.
+The login check does not create a session.
+
 ## Run the tests
 
 ```
@@ -80,7 +87,10 @@ your data.
 
 | Folder / file | Purpose |
 | --- | --- |
-| `frontend/` | Website HTML, CSS, JavaScript |
+| `frontend/views/` | Website page markup and styles |
+| `frontend/views/customer/` | Customer-facing pages; unsupported actions are labelled and disabled |
+| `frontend/views/admin/` | Admin views |
+| `backend/controllers/` | Browser-side JavaScript modules for the dashboard, login, orders and payments, inventory, and events |
 | `backend/apis/` | Local website server and application operations (profiles, cart, orders, payments, inventory, events) |
 | `backend/models/` | Python classes for users, items, carts, orders, payments, events, appointments |
 | `backend/utils/` | SQLite query builder and transactions, validation, logging, responses, table/column/status constants |

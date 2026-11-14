@@ -100,18 +100,71 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
         with urlopen(page_url) as response:
             self.assertEqual(response.status, 200)
             page = response.read().decode("utf-8")
-        with urlopen(self.base_url + "/local_website.js") as response:
+        with urlopen(self.base_url + "/controllers/local_website.js") as response:
             script = response.read().decode("utf-8")
+        with urlopen(self.base_url + "/views/local_website.css") as response:
+            stylesheet = response.read().decode("utf-8")
+        with urlopen(self.base_url + "/local_website.js") as response:
+            legacy_script = response.read().decode("utf-8")
+        with urlopen(self.base_url + "/local_website.css") as response:
+            legacy_stylesheet = response.read().decode("utf-8")
 
         self.assertIn("Local dry-run website", page)
+        self.assertIn('href="/views/local_website.css"', page)
+        self.assertIn('type="module" src="/controllers/local_website.js"', page)
         self.assertIn('id="login-form"', page)
         self.assertIn("login@example.com", page)
         self.assertIn("1234", page)
         self.assertIn('id="payment-dialog"', page)
         self.assertIn('id="payment-history"', page)
+        self.assertIn(".header", stylesheet)
+        self.assertIn("/api/dashboard", legacy_script)
+        self.assertIn(".header", legacy_stylesheet)
         self.assertIn("/api/dashboard", script)
-        self.assertIn("/api/login", script)
-        self.assertIn("/api/payments", script)
+        for filename, expected in (
+            ("auth_controller.js", "/api/login"),
+            ("order_controller.js", "/api/payments"),
+            ("inventory_controller.js", "/api/inventory"),
+            ("event_controller.js", "/api/events"),
+            ("shared.js", "export async function callApi"),
+        ):
+            with self.subTest(filename=filename):
+                with urlopen(f"{self.base_url}/controllers/{filename}") as response:
+                    self.assertEqual(response.status, 200)
+                    self.assertIn("javascript", response.headers.get_content_type())
+                    self.assertIn(expected, response.read().decode("utf-8"))
+
+        with self.assertRaises(HTTPError) as error:
+            urlopen(self.base_url + "/controllers/local_website_api.py")
+        self.assertEqual(error.exception.code, 404)
+
+    def test_customer_pages_and_controller_are_served(self) -> None:
+        pages = {
+            "index.html": "Featured items",
+            "login.html": "does not sign you in",
+            "signup.html": "Account creation is not available",
+            "items.html": "item-search",
+            "item.html": "Adding items to a cart is not available",
+            "cart.html": "Customer carts",
+            "checkout.html": "Customer checkout is not available",
+            "orders.html": "Personal order history",
+            "events.html": "Customer registration and unregistration",
+            "appointments.html": "Booking and personal appointment lists",
+            "profile.html": "Viewing and editing a personal profile",
+        }
+        for filename, content in pages.items():
+            with self.subTest(page=filename):
+                with urlopen(f"{self.base_url}/views/customer/{filename}") as response:
+                    self.assertEqual(response.status, 200)
+                    page = response.read().decode("utf-8")
+                self.assertIn(content, page)
+                self.assertIn("/controllers/customer_controller.js", page)
+
+        with urlopen(self.base_url + "/controllers/customer_controller.js") as response:
+            self.assertIn("javascript", response.headers.get_content_type())
+            controller = response.read().decode("utf-8")
+        self.assertIn("/api/inventory", controller)
+        self.assertIn("/api/events", controller)
 
     def test_login_endpoint_calls_profile_login_and_returns_role(self) -> None:
         ManageProfile(self.database_path).createAccount(

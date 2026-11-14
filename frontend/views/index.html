@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light">
     <title>LPVR Local Dry-Run Website</title>
-    <link rel="stylesheet" href="/local_website.css">
+    <link rel="stylesheet" href="/views/local_website.css">
   </head>
   <body>
     <main class="page">
@@ -14,6 +14,7 @@
           <p class="eyebrow">LOCAL DEVELOPMENT · MOCK PAYMENTS</p>
           <h1>Local dry-run website</h1>
           <p class="subtitle">Review application data and simulate credit-card payments.</p>
+          <p class="subtitle"><a href="/views/customer/index.html">Open customer views</a></p>
         </div>
         <span id="overall-status" class="status status-pending">Loading…</span>
       </header>
@@ -232,6 +233,6 @@
 
       <p class="footnote">Only the approved test card succeeds. Sample orders are saved, but payment attempts and card details are not. No external bank is contacted.</p>
     </main>
-    <script src="/local_website.js" defer></script>
+    <script type="module" src="/controllers/local_website.js"></script>
   </body>
 </html>
