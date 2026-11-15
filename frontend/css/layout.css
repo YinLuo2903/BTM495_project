@@ -1,12 +1,21 @@
 /* Layout-specific styles for injected components */
+/* SYNCED WITH .home-nav in frontend/css/navigation.css */
 
-/* Navigation container structure */
+/* Navigation container structure - MATCHES HOME PAGE SIZING */
 .nav-container {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 32px;
-  padding: 12px 24px;
+  gap: 32px 24px;
+  padding: 16px 24px; /* SYNCED: Same as .home-nav */
+  border-bottom: 3px solid var(--brand);
+  background: #fff;
+  width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
 }
 
 .nav-brand {
@@ -24,7 +33,7 @@
 
 .nav-title {
   font-weight: 700;
-  font-size: 14px;
+  font-size: 15px; /* SYNCED: Matches home page nav */
   letter-spacing: 0.05em;
   white-space: nowrap;
 }
@@ -32,7 +41,7 @@
 .nav-menu {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 24px 28px; /* SYNCED: Same as .home-nav-links */
   margin: 0;
   padding: 0;
   list-style: none;
@@ -42,8 +51,8 @@
 .nav-menu a {
   text-decoration: none;
   color: var(--ink);
-  font-weight: 500;
-  font-size: 14px;
+  font-weight: 600; /* SYNCED: Same as .home-nav a */
+  font-size: 15px; /* SYNCED: Same as home page nav */
   transition: color 0.2s;
 }
 
@@ -62,6 +71,6 @@
 
 /* Admin-specific navigation */
 .admin-nav .nav-title {
-  font-size: 13px;
-  opacity: 0.9;
+  font-size: 15px; /* SYNCED: Same as customer nav */
+  opacity: 1; /* Full opacity for admin */
 }
