@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Inventory</title>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/layout.css">
     <style>
         .inventory-container {
             max-width: 100%;
@@ -253,6 +254,7 @@
     </style>
 </head>
 <body>
+    <nav class="home-nav" aria-label="Main navigation"></nav>
     <div class="container">
         <a href="index.html" class="back-link">← Back to Dashboard</a>
         <h1>Manage Inventory</h1>
@@ -542,5 +544,9 @@
         // Load items on page load
         loadItems();
     </script>
+    </div>
+    
+    <footer class="site-footer"></footer>
+    <script type="module" src="/components/layout.js"></script>
 </body>
 </html>

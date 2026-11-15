@@ -1,14 +1,16 @@
 <!doctype html>
 <html lang="en">
-  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Profile | LE PETIT VéLO ROUGE</title><link rel="stylesheet" href="/css/style.css"></head>
+  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Profile | LE PETIT VéLO ROUGE</title><link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="/css/layout.css"></head>
   <body data-customer-page="profile">
+    <nav class="home-nav" aria-label="Main navigation"></nav>
     <main class="page customer-content">
       <header class="header"><div><p class="eyebrow">LE PETIT VéLO ROUGE</p><h1>Your profile</h1></div></header>
-      <nav class="customer-nav" aria-label="Customer navigation"></nav>
       <section class="card"><h2>Profile details</h2><p class="customer-notice">Viewing and editing a personal profile requires a customer session and is not available yet.</p>
         <form><fieldset disabled><label for="profile-name">Name</label><input id="profile-name" autocomplete="name"><label for="profile-email">Email</label><input id="profile-email" type="email" autocomplete="email"><label for="profile-phone">Phone</label><input id="profile-phone" type="tel" autocomplete="tel"><label for="profile-address">Address</label><input id="profile-address" autocomplete="street-address"><p><button type="submit">Save profile</button></p></fieldset></form>
       </section>
     </main>
+    <footer class="site-footer"></footer>
+    <script type="module" src="/components/layout.js"></script>
     <script type="module" src="/controllers/customer_controller.js"></script>
   </body>
 </html>

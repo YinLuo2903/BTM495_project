@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="en">
-  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Login | LE PETIT VéLO ROUGE</title><link rel="stylesheet" href="/css/style.css"></head>
+  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Login | LE PETIT VéLO ROUGE</title><link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="/css/layout.css"></head>
   <body data-customer-page="login">
+    <nav class="home-nav" aria-label="Main navigation"></nav>
     <main class="page customer-content">
       <header class="header"><div><p class="eyebrow">LE PETIT VéLO ROUGE</p><h1>Login</h1><p class="subtitle">Check your credentials in the local demo.</p></div></header>
-      <nav class="customer-nav" aria-label="Customer navigation"></nav>
       <section class="card">
         <h2>Test profile login</h2>
         <p class="customer-notice">This checks credentials only; it does not sign you in or create a session.</p>
@@ -18,6 +18,8 @@
         <p><a href="signup.html">Create an account</a></p>
       </section>
     </main>
+    <footer class="site-footer"></footer>
+    <script type="module" src="/components/layout.js"></script>
     <script type="module" src="/controllers/customer_controller.js"></script>
     <script type="module" src="/controllers/auth_controller.js"></script>
   </body>

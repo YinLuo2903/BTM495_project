@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Events</title>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/layout.css">
     <style>
         .events-container {
             max-width: 100%;
@@ -185,6 +186,7 @@
     </style>
 </head>
 <body>
+    <nav class="home-nav" aria-label="Main navigation"></nav>
     <div class="container">
         <a href="index.html" class="back-link">← Back to Dashboard</a>
         <h1>Manage Events</h1>
@@ -398,5 +400,9 @@
         // Load events on page load
         loadEvents();
     </script>
+    </div>
+    
+    <footer class="site-footer"></footer>
+    <script type="module" src="/components/layout.js"></script>
 </body>
 </html>

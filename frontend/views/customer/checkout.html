@@ -1,15 +1,17 @@
 <!doctype html>
 <html lang="en">
-  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Checkout | LE PETIT VéLO ROUGE</title><link rel="stylesheet" href="/css/style.css"></head>
+  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Checkout | LE PETIT VéLO ROUGE</title><link rel="stylesheet" href="/css/style.css"><link rel="stylesheet" href="/css/layout.css"></head>
   <body data-customer-page="checkout">
+    <nav class="home-nav" aria-label="Main navigation"></nav>
     <main class="page customer-content">
       <header class="header"><div><p class="eyebrow">LE PETIT VéLO ROUGE</p><h1>Checkout</h1></div></header>
-      <nav class="customer-nav" aria-label="Customer navigation"></nav>
       <section class="card"><h2>Review your order</h2><p class="customer-notice">Customer checkout is not available yet. The local demo supports mock credit-card payments only.</p>
         <form><fieldset disabled><label for="payment-method">Payment method</label><select id="payment-method"><option>Credit card</option><option>Debit card</option></select><p><button type="submit">Confirm order</button></p></fieldset></form>
         <a href="/">Open the mock-payment demo</a>
       </section>
     </main>
+    <footer class="site-footer"></footer>
+    <script type="module" src="/components/layout.js"></script>
     <script type="module" src="/controllers/customer_controller.js"></script>
   </body>
 </html>
