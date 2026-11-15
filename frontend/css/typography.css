@@ -1,0 +1,31 @@
+/* Typography and text utilities */
+
+.eyebrow {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.subtitle,
+.muted,
+.footnote {
+  color: var(--color-muted);
+}
+
+.subtitle {
+  margin-bottom: 0;
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.subtitle a {
+  color: var(--ink);
+}
+
+.footnote {
+  margin: 16px 2px;
+  font-size: 12px;
+  line-height: 1.6;
+}

@@ -1,0 +1,37 @@
+/* Design tokens and CSS custom properties */
+:root {
+  /* Brand Colors */
+  --brand: #f26a1b;
+  --brand-dark: #c9540f;
+
+  /* Text Colors */
+  --ink: #111111;
+  --muted: #666666;
+  --line: #e5e5e5;
+
+  /* Background & Surface Colors */
+  --background: #fafafa;
+  --surface: #ffffff;
+
+  /* Typography */
+  --font-family: "Segoe UI", Arial, sans-serif;
+
+  /* Font Sizes */
+  --font-hero: 42px;
+  --font-section: 24px;
+  --font-card: 18px;
+  --font-body: 16px;
+  --font-nav: 15px;
+  --font-small: 14px;
+
+  /* Color Aliases */
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-border: var(--line);
+
+  /* Effects */
+  --shadow-card: 0 12px 32px rgb(0 0 0 / 6%);
+
+  /* Theme Settings */
+  color-scheme: light;
+}

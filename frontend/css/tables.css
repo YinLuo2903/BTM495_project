@@ -1,0 +1,63 @@
+/* Table styling for admin and data display */
+
+.table-wrap {
+  margin-top: 18px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+th,
+td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+th {
+  color: var(--muted);
+  background: #f7f7f7;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+:is(.items-table, .inventory-table, .orders-table, .events-table, .appointments-table) thead th {
+  color: var(--ink);
+  background: var(--brand);
+}
+
+td {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+tbody tr:hover td {
+  background: #fafafa;
+}
+
+td:last-child,
+th:last-child {
+  text-align: right;
+}
+
+.row-ok {
+  color: #17643a;
+  font-weight: 700;
+}
+
+.row-pending {
+  color: #7b5710;
+  font-weight: 700;
+}

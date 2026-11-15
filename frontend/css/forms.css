@@ -1,0 +1,86 @@
+/* Form input styling */
+
+.customer-content label {
+  display: block;
+  margin: 16px 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.customer-content input,
+.customer-content select {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+}
+
+.customer-content input:focus-visible,
+.customer-content select:focus-visible {
+  outline: 3px solid var(--brand-dark);
+  outline-offset: 2px;
+}
+
+#login-form label,
+#payment-form label,
+.inline-form label {
+  display: block;
+  margin: 16px 0 6px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+#login-form input,
+#payment-form input,
+#payment-form select,
+.inline-form input,
+.inline-form select {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--color-ink);
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+}
+
+#login-form input:focus,
+#payment-form input:focus,
+#payment-form select:focus,
+.inline-form input:focus,
+.inline-form select:focus {
+  border-color: var(--brand-dark);
+  outline: 3px solid rgb(201 84 15 / 35%);
+  outline-offset: 1px;
+}
+
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.inline-form > div {
+  flex: 1 1 150px;
+  min-width: 130px;
+}
+
+.inline-form label {
+  margin-top: 0;
+}
+
+.inline-form button {
+  margin-bottom: 0;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}

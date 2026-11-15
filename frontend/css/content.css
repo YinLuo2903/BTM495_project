@@ -1,0 +1,61 @@
+/* List and content utilities */
+
+.customer-list {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.customer-list li {
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+}
+
+.customer-list li p {
+  margin: 6px 0 0;
+}
+
+.customer-notice {
+  padding: 12px 14px;
+  border-left: 4px solid #b5851f;
+  border-radius: 6px;
+  color: #604b0c;
+  background: #fff7df;
+}
+
+.status {
+  flex: 0 0 auto;
+  padding: 9px 13px;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 10%);
+}
+
+.status-pending {
+  color: #694d08;
+  background: #fff1c2;
+}
+
+.status-ok {
+  color: #17643a;
+  background: #d9f5e5;
+}
+
+.status-error {
+  color: #8c2631;
+  background: #ffe1e3;
+}
+
+.error {
+  margin: 18px 0 0;
+  padding: 12px 14px;
+  border: 1px solid #f4c9cc;
+  border-radius: 8px;
+  color: #8c2631;
+  background: #fff0f1;
+  overflow-wrap: anywhere;
+}

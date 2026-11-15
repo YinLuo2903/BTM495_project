@@ -1,0 +1,53 @@
+/* Global base styles and resets */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  font-family: var(--font-family);
+  color: var(--ink);
+  background:
+    radial-gradient(ellipse at 10% 0%, rgb(242 106 27 / 8%), transparent 32rem),
+    var(--background);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 10px;
+  font-size: clamp(30px, 5vw, 42px);
+  letter-spacing: -0.035em;
+}
+
+h2 {
+  margin-bottom: 6px;
+  color: var(--color-ink);
+  font-size: 19px;
+  letter-spacing: -0.02em;
+}
+
+h3 {
+  margin: 28px 0 0;
+  color: var(--color-ink);
+  font-size: 16px;
+}
+
+code {
+  padding: 3px 7px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  background: #f5f5f5;
+  font-size: 0.92em;
+}

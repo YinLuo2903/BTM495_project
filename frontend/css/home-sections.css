@@ -1,0 +1,79 @@
+/* Home page specific sections */
+
+/* Events Section */
+.events-section {
+  margin-bottom: 28px;
+}
+
+.events-description {
+  color: var(--color-muted);
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+
+/* Events Grid Layout */
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  padding: 0;
+  list-style: none;
+  margin-bottom: 20px;
+}
+
+/* Each Event Card */
+.events-grid > li {
+  background-color: #f9f9f9;
+  border: 1px solid #dddddd;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.events-link {
+  color: var(--brand);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  transition: color 140ms ease;
+}
+
+.events-link:hover {
+  color: var(--brand-dark);
+}
+
+/* Browse Items Section */
+.browse-items-section {
+  margin-bottom: 28px;
+}
+
+/* Book Appointment Section */
+.book-appointment-section {
+  margin-bottom: 28px;
+}
+
+/* Sections Grid Layout */
+.sections-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+/* General Section Description and Link Styles */
+.section-description {
+  color: var(--color-muted);
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+
+.section-link {
+  color: var(--brand);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  transition: color 140ms ease;
+}
+
+.section-link:hover {
+  color: var(--brand-dark);
+}

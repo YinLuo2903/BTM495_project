@@ -1,0 +1,76 @@
+/* Page structure and layout grid */
+
+.page {
+  width: min(1160px, calc(100% - 48px));
+  margin: 48px auto;
+  padding-top: 70px;
+}
+
+.header,
+.card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.header {
+  position: relative;
+  min-height: 218px;
+  margin-bottom: 24px;
+  padding: 38px 42px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 20px;
+  color: var(--ink);
+  background: linear-gradient(120deg, var(--brand) 0%, #ff9a5c 100%);
+  box-shadow: 0 18px 42px rgb(0 0 0 / 18%);
+}
+
+.header::after {
+  position: absolute;
+  top: -112px;
+  right: -52px;
+  width: 360px;
+  height: 360px;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 50%;
+  box-shadow: 0 0 0 34px rgb(255 255 255 / 4%), 0 0 0 70px rgb(255 255 255 / 3%);
+  content: "";
+  pointer-events: none;
+}
+
+.customer-welcome {
+  background: transparent;
+  box-shadow: none;
+}
+
+.header-logo {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.header > div,
+.header > span {
+  position: relative;
+  z-index: 1;
+}
+
+.card {
+  margin-bottom: 18px;
+  padding: 26px 28px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: var(--shadow-card);
+}
+
+.card > p.muted {
+  line-height: 1.55;
+}
+
+.card-heading p {
+  margin-bottom: 0;
+}

@@ -1,0 +1,80 @@
+/* Responsive design breakpoints */
+
+@media (max-width: 700px) {
+  .page {
+    width: min(100% - 28px, 560px);
+    margin: 20px auto;
+  }
+
+  .header {
+    min-height: 190px;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 20px;
+    padding: 28px;
+  }
+
+  .header::after {
+    top: -156px;
+    right: -160px;
+  }
+
+  .card-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .button-group {
+    width: 100%;
+  }
+
+  .button-group button {
+    flex: 1 1 auto;
+  }
+
+  .card {
+    padding: 21px;
+  }
+
+  th,
+  td {
+    padding: 10px 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: 24px 21px;
+  }
+
+  .card {
+    padding: 18px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .inline-form > div {
+    flex-basis: 100%;
+  }
+
+  .inline-form button {
+    width: 100%;
+  }
+
+  dialog {
+    padding: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
