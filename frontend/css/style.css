@@ -2,19 +2,35 @@
 :root {
   --brand: #f26a1b;
   --brand-dark: #c9540f;
-  --ink: #111;
-  --muted: #666;
+
+  --ink: #111111;
+  --muted: #666666;
   --line: #e5e5e5;
-  color-scheme: light;
-  font-family: "Segoe UI", Arial, sans-serif;
-  color: var(--ink);
-  background: #fafafa;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+
+  --background: #fafafa;
+  --surface: #ffffff;
+
+  --font-family: "Segoe UI", Arial, sans-serif;
+
+  --font-hero: 42px;
+  --font-section: 24px;
+  --font-card: 18px;
+  --font-body: 16px;
+  --font-nav: 15px;
+  --font-small: 14px;
+
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-border: var(--line);
+
   --shadow-card: 0 12px 32px rgb(0 0 0 / 6%);
+
+  color-scheme: light;
+  font-family: var(--font-family);
+  color: var(--ink);
+  background: var(--background);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
 }
 
 * {
@@ -27,7 +43,7 @@ body {
   margin: 0;
   background:
     radial-gradient(ellipse at 10% 0%, rgb(242 106 27 / 8%), transparent 32rem),
-    #fafafa;
+    var(--background);
 }
 
 .page {

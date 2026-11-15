@@ -1,0 +1,67 @@
+/* Layout-specific styles for injected components */
+
+/* Navigation container structure */
+.nav-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 12px 24px;
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.nav-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.nav-title {
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.nav-menu {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  flex-wrap: wrap;
+}
+
+.nav-menu a {
+  text-decoration: none;
+  color: var(--ink);
+  font-weight: 500;
+  font-size: 14px;
+  transition: color 0.2s;
+}
+
+.nav-menu a:hover {
+  color: var(--brand);
+}
+
+.nav-auth,
+.nav-profile {
+  margin-left: auto;
+}
+
+.nav-back {
+  font-size: 12px;
+}
+
+/* Admin-specific navigation */
+.admin-nav .nav-title {
+  font-size: 13px;
+  opacity: 0.9;
+}
