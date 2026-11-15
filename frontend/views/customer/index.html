@@ -9,8 +9,64 @@
   <body data-customer-page="home">
     <main class="page customer-content">
       <nav class="home-nav" aria-label="Main navigation"></nav>
-      <header class="header customer-welcome"><div><p class="eyebrow">LE PETIT VéLO ROUGE</p><h1>Welcome</h1><p class="subtitle">Explore items and community events.</p></div></header>
-      <section class="card"><h2>Events</h2><p class="muted">Events available in the local demo. Dates are not available yet.</p><p id="events-message" role="status">Loading events…</p><ul id="events-list" class="customer-list"></ul><a href="events.html">View all events</a></section>
+      <header class="header customer-welcome">
+        <img src="/assets/images/logo.png" alt="LE PETIT VÉLO ROUGE Logo" class="header-logo">
+        <div>
+          <p class="eyebrow">LE PETIT VÉLO ROUGE</p>
+          <h1>Fix your own bike. We'll help.</h1>
+          <p class="subtitle">A self-serve community bike shop:use our tools and stands, share knowledge, and get friendly support from volunteers. No experience needed.</p>
+        </div>
+      </header>
+      <section class="card events-section">
+
+        <h2>Upcoming Events</h2>
+
+        <p class="events-description">
+          Discover our community activities.
+        </p>
+
+        <p id="events-message" role="status">
+          Loading events…
+        </p>
+
+        <ul id="events-list" class="events-grid"></ul>
+
+        <a href="events.html" class="events-link">
+          View all events
+        </a>
+
+      </section>
+
+      <div class="sections-grid">
+        <section class="card browse-items-section">
+
+          <h2>Browse Items</h2>
+
+          <p class="section-description">
+            Explore our collection of bike parts and tools available for use or purchase.
+          </p>
+
+          <a href="items.html" class="section-link">
+            View all items
+          </a>
+
+        </section>
+
+        <section class="card book-appointment-section">
+
+          <h2>Book Appointment</h2>
+
+          <p class="section-description">
+            Schedule a guided session with our expert volunteers for personalized assistance.
+          </p>
+
+          <a href="appointments.html" class="section-link">
+            View appointments
+          </a>
+
+        </section>
+      </div>
+
       <p><a href="/">Return to the local demo</a></p>
     </main>
     <footer class="site-footer">
@@ -24,7 +80,7 @@
         </div>
       </div>
       <div class="footer-bottom">
-        <p>&copy; 2024 LE PETIT VÉLO ROUGE. All rights reserved.</p>
+        <p>&copy; 2026 LE PETIT VÉLO ROUGE. All rights reserved.</p>
       </div>
     </footer>
     <script type="module" src="/controllers/home_navigation.js"></script>
