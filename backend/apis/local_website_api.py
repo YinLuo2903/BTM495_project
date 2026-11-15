@@ -38,6 +38,7 @@ CONTROLLER_FILES = frozenset(
         "event_controller.js",
         "shared.js",
         "customer_controller.js",
+        "home_navigation.js",
     }
 )
 LOCAL_DEMO_LOGIN_EMAIL = "login@example.com"

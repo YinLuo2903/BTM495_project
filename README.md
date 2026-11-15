@@ -66,6 +66,10 @@ They include a browsable catalog, event list, and credential check. Other
 customer pages are view scaffolds: signup, personal orders, cart, checkout,
 event registration, appointments, and profile editing are not yet available.
 The login check does not create a session.
+The customer home and admin dashboard share a navigation bar linking to the
+customer home, items, appointments, cart, credential checks, and customer
+signup. Admin signup is not yet available; customer signup, appointments, and
+cart pages are scaffolds. The local demo remains available at `/`.
 
 ## Run the tests
 

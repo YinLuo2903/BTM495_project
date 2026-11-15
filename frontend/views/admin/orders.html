@@ -32,15 +32,15 @@
         
         .filter-section button {
             padding: 8px 15px;
-            background-color: #007bff;
-            color: white;
+            background-color: var(--ink);
+            color: var(--ink);
             border: none;
             border-radius: 4px;
             cursor: pointer;
         }
         
         .filter-section button:hover {
-            background-color: #0056b3;
+            background-color: var(--brand-dark);
         }
         
         .status-update-form {
@@ -86,8 +86,8 @@
         }
         
         .orders-table thead {
-            background-color: #007bff;
-            color: white;
+            background-color: var(--ink);
+            color: var(--ink);
         }
         
         .orders-table th,
@@ -103,7 +103,7 @@
         
         .order-id {
             font-weight: bold;
-            color: #007bff;
+            color: var(--ink);
         }
         
         .status-badge {
@@ -145,12 +145,12 @@
         }
         
         .btn-primary {
-            background-color: #007bff;
-            color: white;
+            background-color: var(--ink);
+            color: var(--ink);
         }
         
         .btn-primary:hover {
-            background-color: #0056b3;
+            background-color: var(--brand-dark);
         }
         
         .btn-secondary {
@@ -202,7 +202,7 @@
         .back-link {
             display: inline-block;
             margin-bottom: 20px;
-            color: #007bff;
+            color: var(--ink);
             text-decoration: none;
             font-weight: bold;
         }
@@ -243,7 +243,7 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
-            border-bottom: 2px solid #007bff;
+            border-bottom: 2px solid var(--brand);
             padding-bottom: 10px;
         }
         
@@ -440,7 +440,7 @@
                     </div>
                     <div class="order-detail">
                         <div class="order-detail-label">Total Amount:</div>
-                        <div style="font-size: 1.5em; color: #007bff; font-weight: bold;">$${parseFloat(order.total).toFixed(2)}</div>
+                        <div style="font-size: 1.5em; color: var(--ink); font-weight: bold;">$${parseFloat(order.total).toFixed(2)}</div>
                     </div>
                     <div class="order-detail">
                         <div class="order-detail-label">Items:</div>

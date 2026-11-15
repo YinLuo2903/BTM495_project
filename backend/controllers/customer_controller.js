@@ -15,14 +15,16 @@ const pages = [
   ["signup", "Signup", "signup.html"],
 ];
 
-for (const [id, label, href] of pages) {
-  const link = document.createElement("a");
-  link.href = href;
-  link.textContent = label;
-  if (id === page || (page === "item" && id === "items")) {
-    link.setAttribute("aria-current", "page");
+if (navigation) {
+  for (const [id, label, href] of pages) {
+    const link = document.createElement("a");
+    link.href = href;
+    link.textContent = label;
+    if (id === page || (page === "item" && id === "items")) {
+      link.setAttribute("aria-current", "page");
+    }
+    navigation.append(link);
   }
-  navigation.append(link);
 }
 
 function showError(target, error) {
@@ -54,10 +56,6 @@ async function loadItems() {
   const message = document.querySelector("#items-message");
   try {
     const { items } = await callApi("GET", "/api/inventory");
-    if (page === "home") {
-      renderItems(items.slice(0, 3), list, message);
-      return;
-    }
     const search = document.querySelector("#item-search");
     const category = document.querySelector("#item-category");
     const categories = [...new Set(items.map((item) => item.category).filter(Boolean))].sort();
@@ -130,7 +128,7 @@ async function loadEvents() {
   }
 }
 
-if (page === "home" || page === "items") {
+if (page === "items") {
   loadItems();
 }
 if (page === "item") {

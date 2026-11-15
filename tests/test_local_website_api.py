@@ -114,11 +114,21 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
         self.assertIn('href="/css/style.css"', page)
         self.assertIn('type="module" src="/controllers/local_website.js"', page)
         self.assertIn('id="login-form"', page)
+        self.assertIn('id="login-title"', page)
+        self.assertIn("does not sign you in or create a session", page)
         self.assertIn("login@example.com", page)
         self.assertIn("1234", page)
         self.assertIn('id="payment-dialog"', page)
         self.assertIn('id="payment-history"', page)
         self.assertIn(".header", stylesheet)
+        for token in (
+            "--brand: #f26a1b;",
+            "--brand-dark: #c9540f;",
+            "--ink: #111;",
+            "--muted: #666;",
+            "--line: #e5e5e5;",
+        ):
+            self.assertIn(token, stylesheet)
         self.assertIn("/api/dashboard", legacy_script)
         self.assertIn(".header", legacy_stylesheet)
         for legacy_path in ("/view/local_website.css", "/views/local_website.css"):
@@ -145,7 +155,7 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
 
     def test_customer_pages_and_controller_are_served(self) -> None:
         pages = {
-            "index.html": "Featured items",
+            "index.html": "Events",
             "login.html": "does not sign you in",
             "signup.html": "Account creation is not available",
             "items.html": "item-search",
@@ -163,6 +173,9 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
                     self.assertEqual(response.status, 200)
                     page = response.read().decode("utf-8")
                 self.assertIn(content, page)
+                if filename == "index.html":
+                    self.assertNotIn("Featured items", page)
+                    self.assertNotIn('id="items-list"', page)
                 self.assertIn('href="/css/style.css"', page)
                 self.assertIn("/controllers/customer_controller.js", page)
 
@@ -182,6 +195,33 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
                     self.assertEqual(response.status, 200)
                     page = response.read().decode("utf-8")
                 self.assertIn('href="/css/style.css"', page)
+                self.assertNotIn("#007bff", page.lower())
+                self.assertNotIn("#0056b3", page.lower())
+
+    def test_customer_home_and_admin_dashboard_share_navigation(self) -> None:
+        for path in ("/views/customer/index.html", "/views/admin/index.html"):
+            with self.subTest(page=path):
+                with urlopen(self.base_url + path) as response:
+                    page = response.read().decode("utf-8")
+                self.assertIn('class="home-nav" aria-label="Main navigation"', page)
+                self.assertIn('src="/controllers/home_navigation.js"', page)
+        with urlopen(self.base_url + "/controllers/home_navigation.js") as response:
+            self.assertIn("javascript", response.headers.get_content_type())
+            navigation = response.read().decode("utf-8")
+        for href in (
+            "/views/customer/index.html",
+            "/views/customer/items.html",
+            "/views/customer/appointments.html",
+            "/views/customer/cart.html",
+            "/views/customer/login.html",
+            "/views/customer/signup.html",
+        ):
+            with self.subTest(link=href):
+                self.assertIn(f'"{href}"', navigation)
+                with urlopen(self.base_url + href) as response:
+                    self.assertEqual(response.status, 200)
+        self.assertIn('"/#login-title"', navigation)
+        self.assertIn("Signup unavailable", navigation)
 
     def test_login_endpoint_calls_profile_login_and_returns_role(self) -> None:
         ManageProfile(self.database_path).createAccount(

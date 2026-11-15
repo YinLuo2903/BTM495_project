@@ -3,17 +3,31 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Home | LPVR</title>
+    <title>Home | LE PETIT VÉLO ROUGE</title>
     <link rel="stylesheet" href="/css/style.css">
   </head>
   <body data-customer-page="home">
     <main class="page customer-content">
-      <header class="header"><div><p class="eyebrow">LPVR BIKE SHOP</p><h1>Welcome</h1><p class="subtitle">Explore items and community events.</p></div></header>
-      <nav class="customer-nav" aria-label="Customer navigation"></nav>
-      <section class="card"><h2>Featured items</h2><p class="muted">A selection from the local inventory.</p><p id="items-message" role="status">Loading items…</p><ul id="items-list" class="customer-list"></ul><a href="items.html">View all items</a></section>
+      <nav class="home-nav" aria-label="Main navigation"></nav>
+      <header class="header customer-welcome"><div><p class="eyebrow">LE PETIT VéLO ROUGE</p><h1>Welcome</h1><p class="subtitle">Explore items and community events.</p></div></header>
       <section class="card"><h2>Events</h2><p class="muted">Events available in the local demo. Dates are not available yet.</p><p id="events-message" role="status">Loading events…</p><ul id="events-list" class="customer-list"></ul><a href="events.html">View all events</a></section>
       <p><a href="/">Return to the local demo</a></p>
     </main>
+    <footer class="site-footer">
+      <div class="footer-grid">
+        <div>
+          <h3>LE PETIT VÉLO ROUGE</h3>
+          <p>Located in: Concordia University - Loyola Campus<br>
+             7141 Rue Sherbrooke O PS 145, Montréal, QC H4B 2B9<br>
+             <a href="mailto:petitvelorouge@gmail.com">petitvelorouge@gmail.com</a><br>
+             <a href="https://www.instagram.com/LPVR_lepetitvelorouge" target="_blank">@LPVR_lepetitvelorouge</a></p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2024 LE PETIT VÉLO ROUGE. All rights reserved.</p>
+      </div>
+    </footer>
+    <script type="module" src="/controllers/home_navigation.js"></script>
     <script type="module" src="/controllers/customer_controller.js"></script>
   </body>
 </html>
