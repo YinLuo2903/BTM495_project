@@ -9,5 +9,15 @@ else
     python3 -m venv .venv || { echo "Could not create the environment. Install Python 3.10 or newer first."; exit 1; }
 fi
 
-echo "Starting the local website. Press Ctrl+C to stop."
+command -v npm >/dev/null 2>&1 || { echo "npm was not found. Install Node.js 20 or newer first."; exit 1; }
+
+if [ ! -d "frontend/node_modules" ]; then
+    echo "Installing frontend dependencies ..."
+    (cd frontend && npm ci)
+fi
+
+echo "Building the frontend ..."
+(cd frontend && npm run build)
+
+echo "Starting the local website (default http://localhost:8765/). Press Ctrl+C to stop."
 exec .venv/bin/python run_local_website.py "$@"

@@ -1,4 +1,6 @@
 import logging
+import os
+import socket
 import sqlite3
 import time
 from datetime import datetime
@@ -8,6 +10,7 @@ from urllib.parse import urlsplit
 
 from backend.apis.local_website_extra_api import handle_route, is_extra_route
 from backend.apis.profile_api import ManageProfile
+from backend.apis.session_api import SessionManager
 from backend.models.payment import Payment, PaymentMethod, PaymentStatus
 from backend.utils.constants import DatabaseColumns, DatabaseTables, DatabaseValues
 from backend.utils.http import HTTPRequestError, read_json_object, send_json
@@ -28,19 +31,17 @@ from backend.utils.validators import string_value
 from database.sqlite_database import DB_PATH
 
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
-CONTROLLER_DIR = Path(__file__).resolve().parents[1] / "controllers"
-CONTROLLER_FILES = frozenset(
-    {
-        "local_website.js",
-        "auth_controller.js",
-        "order_controller.js",
-        "inventory_controller.js",
-        "event_controller.js",
-        "shared.js",
-        "customer_controller.js",
-        "home_navigation.js",
-    }
-)
+FRONTEND_BUILD_DIR = FRONTEND_DIR / "dist"
+FRONTEND_PAGES = {
+    "/", "/views/index.html", "/view/index.html",
+    *(f"/views/customer/{page}.html" for page in (
+        "index", "items", "item", "events", "appointments", "cart",
+        "checkout", "orders", "profile", "login", "signup",
+    )),
+    *(f"/views/admin/{page}.html" for page in (
+        "index", "items", "inventory", "orders", "events", "appointments",
+    )),
+}
 LOCAL_DEMO_LOGIN_EMAIL = "login@example.com"
 LOCAL_DEMO_LOGIN_PASSWORD = "1234"
 logger = get_logger(__name__)
@@ -201,25 +202,18 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
 
     def translate_path(self, path: str) -> str:
         request_path = urlsplit(path).path
-        if request_path == "/":
-            path = "/views/index.html"
-        elif request_path in ("/view/index.html",):
-            path = "/views/index.html"
-        elif request_path in (
+        if request_path in FRONTEND_PAGES:
+            return str(FRONTEND_BUILD_DIR / "index.html")
+        if request_path.startswith("/assets/"):
+            candidate = (FRONTEND_BUILD_DIR / request_path.lstrip("/")).resolve()
+            if candidate.is_relative_to(FRONTEND_BUILD_DIR.resolve()) and candidate.is_file():
+                return str(candidate)
+        if request_path in (
             "/local_website.css",
             "/view/local_website.css",
             "/views/local_website.css",
         ):
             path = "/css/style.css"
-        elif request_path in (
-            "/local_website.js",
-            "/controller/local_website.js",
-        ):
-            return str(CONTROLLER_DIR / "local_website.js")
-        elif request_path.startswith("/controllers/"):
-            filename = request_path.removeprefix("/controllers/")
-            if filename in CONTROLLER_FILES:
-                return str(CONTROLLER_DIR / filename)
         return super().translate_path(path)
 
     def send_response(self, code: int, message: str | None = None) -> None:
@@ -278,9 +272,15 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
         return True
 
     def do_GET(self) -> None:
+        if urlsplit(self.path).path in FRONTEND_PAGES and not (FRONTEND_BUILD_DIR / "index.html").is_file():
+            self.send_error(503, "Frontend build missing; run npm ci and npm run build in frontend.")
+            return
         if self._extra_route("GET"):
             return
         request_path = urlsplit(self.path).path
+        if request_path == "/api/session":
+            self._get_session()
+            return
         if request_path == "/api/status":
             self._send_database_status()
             return
@@ -394,6 +394,9 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
             return
         if request_path == "/api/login":
             self._login()
+            return
+        if request_path == "/api/logout":
+            self._logout()
             return
         if request_path != "/api/payments":
             self._send_json({"status": "error", "message": "Not found."}, 404)
@@ -510,6 +513,16 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
             )
             return
 
+        try:
+            session = SessionManager(DB_PATH).create(user)
+        except sqlite3.Error:
+            logger.exception("Could not create login session")
+            self._send_json(
+                {"status": "error", "message": "Could not process login."},
+                500,
+            )
+            return
+
         self._send_json(
             {
                 "status": "ok",
@@ -517,6 +530,8 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
                     "name": user.name,
                     "is_admin": user.isAdmin,
                 },
+                "token": session.token,
+                "expires_at": session.expires_at,
             },
             200,
         )
@@ -524,6 +539,41 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
             "Login output: successful authentication (role=%s)",
             "admin" if user.isAdmin else "customer",
         )
+
+    def _bearer_token(self) -> str:
+        authorization = self.headers.get("Authorization", "")
+        scheme, separator, token = authorization.partition(" ")
+        if not separator or scheme.lower() != "bearer":
+            return ""
+        return token
+
+    def _get_session(self) -> None:
+        try:
+            user = SessionManager(DB_PATH).get_user(self._bearer_token())
+        except sqlite3.Error:
+            logger.exception("Could not validate session")
+            self._send_json(
+                {"status": "error", "message": "Could not validate session."}, 500
+            )
+            return
+        if user is None:
+            self._send_json(
+                {"status": "error", "message": "Invalid or expired session."}, 401
+            )
+            return
+        self._send_json({"status": "ok", "user": user}, 200)
+
+    def _logout(self) -> None:
+        try:
+            revoked = SessionManager(DB_PATH).revoke(self._bearer_token())
+        except sqlite3.Error:
+            logger.exception("Could not revoke session")
+            self._send_json({"status": "error", "message": "Could not log out."}, 500)
+            return
+        if not revoked:
+            self._send_json({"status": "error", "message": "Invalid session."}, 401)
+            return
+        self._send_json({"status": "ok"}, 200)
 
     def _create_sample_order(self) -> None:
         try:
@@ -657,6 +707,21 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
         send_json(self, response, status_code)
 
 
+class ExclusivePortHTTPServer(ThreadingHTTPServer):
+    """Refuse to share the port with another running server.
+
+    On Windows, SO_REUSEADDR (enabled by http.server) lets several servers bind
+    the same port, and the browser may silently reach a stale one.
+    """
+
+    allow_reuse_address = os.name != "nt"
+
+    def server_bind(self) -> None:
+        if os.name == "nt" and hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
+
+
 def create_server(host: str, port: int) -> ThreadingHTTPServer:
     configure_backend_logging()
-    return ThreadingHTTPServer((host, port), LocalTestRequestHandler)
+    return ExclusivePortHTTPServer((host, port), LocalTestRequestHandler)

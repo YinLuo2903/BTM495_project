@@ -1,6 +1,19 @@
 # Login Feature Analysis & Implementation Plan
 
-## Current Status: PARTIALLY IMPLEMENTED ✓
+## Status update
+
+Phase 1 creates expiring server-side sessions and returns a bearer token
+from the login API. `GET /api/session` validates it and `POST /api/logout`
+revokes it. Phase 2 stores the token in browser localStorage, checks the
+session, and adds sign-in redirects and logout. Phase 3 improves the login
+design and adds password visibility and sign-in progress. Existing pages and APIs are
+not protected. See the README's Session API section for the current contract
+and security limitations.
+
+The analysis and implementation plan below describe the original baseline
+before Phases 1 through 3; statements about missing sessions are historical.
+
+## Original Status: PARTIALLY IMPLEMENTED ✓
 
 ### What Already Exists ✅
 
@@ -172,12 +185,14 @@
 - **Recommendation**: Start with simple database sessions for this project
 
 ### Storage
-- Session tokens: localStorage (browser) + database (server)
-- Alternative: httpOnly cookies (more secure, but more complex)
+- Phase 1 stores only a hash of the bearer token in the database.
+- Phase 2 stores bearer tokens in browser localStorage as requested. This is
+  exposed to JavaScript; an HttpOnly, Secure, SameSite cookie with CSRF
+  protection is a safer choice for production.
 
 ### Expiration
-- Session timeout: 24 hours (configurable)
-- Auto-logout on token expiration
+- Session timeout: 24 hours
+- Expired tokens fail validation and are cleared from browser storage
 - Refresh token mechanism (optional)
 
 ---
