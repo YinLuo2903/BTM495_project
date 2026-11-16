@@ -62,6 +62,7 @@ class DatabaseSchemaTests(unittest.TestCase):
                 "order_item",
                 "payment",
                 "status",
+                "user_session",
             },
         )
         self.assertEqual(tables, set(DATABASE_SCHEMA_COLUMNS))
@@ -121,6 +122,7 @@ class DatabaseSchemaTests(unittest.TestCase):
             "order_item": ["order_id", "item_id"],
             "payment": ["payment_id"],
             "status": ["statusID"],
+            "user_session": ["token_hash"],
         }
 
         for table, expected_columns in expected_primary_keys.items():
@@ -145,6 +147,10 @@ class DatabaseSchemaTests(unittest.TestCase):
             ("statusID", "status", "statusID"),
         }
         expected_foreign_keys = {
+            "user_session": {
+                ("admin_id", "admin", "admin_id"),
+                ("customer_id", "customer", "customer_id"),
+            },
             "event": {("admin_id", "admin", "admin_id")} | status_keys,
             "event_registration": {
                 ("event_id", "event", "event_id"),

@@ -19,6 +19,18 @@ CREATE TABLE IF NOT EXISTS customer (
     address TEXT,
     password_hash TEXT
 );
+
+CREATE TABLE IF NOT EXISTS user_session (
+    token_hash TEXT PRIMARY KEY NOT NULL,
+    admin_id INTEGER,
+    customer_id INTEGER,
+    created_at INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL,
+    CHECK ((admin_id IS NOT NULL) != (customer_id IS NOT NULL)),
+    FOREIGN KEY (admin_id) REFERENCES admin(admin_id) ON DELETE CASCADE,
+    FOREIGN KEY (customer_id) REFERENCES customer(customer_id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_user_session_expires_at ON user_session(expires_at);
 -- Prevent duplicate email entries for admin and customer tables
 DROP TRIGGER IF EXISTS admin_email_insert_unique;
 DROP TRIGGER IF EXISTS admin_email_update_unique;

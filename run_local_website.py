@@ -36,7 +36,16 @@ def main() -> None:
         logger.info("Local demo login is ready (login@example.com).")
 
         logger.info("Starting HTTP server on %s:%d.", args.host, args.port)
-        with create_server(args.host, args.port) as server:
+        try:
+            server = create_server(args.host, args.port)
+        except OSError:
+            logger.error(
+                "Port %d is already in use. Stop the other server (or close its "
+                "terminal) or start with --port <another port>.",
+                args.port,
+            )
+            raise SystemExit(1)
+        with server:
             host, port = server.server_address[:2]
             display_host = "localhost" if host in ("127.0.0.1", "::1") else host
             url = f"http://{display_host}:{port}/"

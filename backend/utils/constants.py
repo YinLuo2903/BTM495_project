@@ -4,6 +4,7 @@ from enum import IntEnum
 class DatabaseTables:
     ADMIN = "admin"
     CUSTOMER = "customer"
+    USER_SESSION = "user_session"
     EVENT = "event"
     EVENT_REGISTRATION = "event_registration"
     APPOINTMENT = "appointment"
@@ -30,6 +31,8 @@ class DatabaseColumns:
     PHONE = "phone"
     ADDRESS = "address"
     PASSWORD_HASH = "password_hash"
+    TOKEN_HASH = "token_hash"
+    EXPIRES_AT = "expires_at"
     DESCRIPTION = "description"
     LOCATION = "location"
     EVENT_DATE_TIME = "eventDateTime"
@@ -85,6 +88,13 @@ DATABASE_SCHEMA_COLUMNS = {
         DatabaseColumns.PHONE,
         DatabaseColumns.ADDRESS,
         DatabaseColumns.PASSWORD_HASH,
+    ),
+    DatabaseTables.USER_SESSION: (
+        DatabaseColumns.TOKEN_HASH,
+        DatabaseColumns.ADMIN_ID,
+        DatabaseColumns.CUSTOMER_ID,
+        DatabaseColumns.CREATED_AT,
+        DatabaseColumns.EXPIRES_AT,
     ),
     DatabaseTables.EVENT: (
         DatabaseColumns.EVENT_ID,

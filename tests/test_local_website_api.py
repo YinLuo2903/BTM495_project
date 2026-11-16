@@ -1,5 +1,7 @@
 import json
+import hashlib
 import logging
+import re
 import sqlite3
 import sys
 import threading
@@ -15,6 +17,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from backend.apis.local_website_api import create_server, ensure_local_demo_login
 from backend.apis.profile_api import ManageProfile
+from backend.apis.session_api import SESSION_LIFETIME_SECONDS
+from backend.models.admin import Admin
 from backend.models.customer import Customer
 
 
@@ -86,6 +90,7 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
                 {"name": "sample", "rows": 2},
                 {"name": "shopping_cart", "rows": 0},
                 {"name": "status", "rows": 3},
+                {"name": "user_session", "rows": 0},
             ],
         )
 
@@ -96,132 +101,44 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
             )
 
     def test_frontend_page_is_served(self) -> None:
-        page_url = self.base_url + "/"
-        with urlopen(page_url) as response:
-            self.assertEqual(response.status, 200)
-            page = response.read().decode("utf-8")
-        with urlopen(self.base_url + "/controllers/local_website.js") as response:
-            script = response.read().decode("utf-8")
-        with urlopen(self.base_url + "/css/style.css") as response:
-            self.assertEqual(response.headers.get_content_type(), "text/css")
-            stylesheet = response.read().decode("utf-8")
-        with urlopen(self.base_url + "/local_website.js") as response:
-            legacy_script = response.read().decode("utf-8")
-        with urlopen(self.base_url + "/local_website.css") as response:
-            legacy_stylesheet = response.read().decode("utf-8")
-
-        self.assertIn("Local dry-run website", page)
-        self.assertIn('href="/css/style.css"', page)
-        self.assertIn('type="module" src="/controllers/local_website.js"', page)
-        self.assertIn('id="login-form"', page)
-        self.assertIn('id="login-title"', page)
-        self.assertIn("does not sign you in or create a session", page)
-        self.assertIn("login@example.com", page)
-        self.assertIn("1234", page)
-        self.assertIn('id="payment-dialog"', page)
-        self.assertIn('id="payment-history"', page)
-        self.assertIn(".header", stylesheet)
-        for token in (
-            "--brand: #f26a1b;",
-            "--brand-dark: #c9540f;",
-            "--ink: #111;",
-            "--muted: #666;",
-            "--line: #e5e5e5;",
-        ):
-            self.assertIn(token, stylesheet)
-        self.assertIn("/api/dashboard", legacy_script)
-        self.assertIn(".header", legacy_stylesheet)
-        for legacy_path in ("/view/local_website.css", "/views/local_website.css"):
-            with self.subTest(path=legacy_path):
-                with urlopen(self.base_url + legacy_path) as response:
-                    self.assertEqual(response.read().decode("utf-8"), stylesheet)
-        self.assertIn("/api/dashboard", script)
-        for filename, expected in (
-            ("auth_controller.js", "/api/login"),
-            ("order_controller.js", "/api/payments"),
-            ("inventory_controller.js", "/api/inventory"),
-            ("event_controller.js", "/api/events"),
-            ("shared.js", "export async function callApi"),
-        ):
-            with self.subTest(filename=filename):
-                with urlopen(f"{self.base_url}/controllers/{filename}") as response:
-                    self.assertEqual(response.status, 200)
-                    self.assertIn("javascript", response.headers.get_content_type())
-                    self.assertIn(expected, response.read().decode("utf-8"))
-
-        with self.assertRaises(HTTPError) as error:
-            urlopen(self.base_url + "/controllers/local_website_api.py")
-        self.assertEqual(error.exception.code, 404)
-
-    def test_customer_pages_and_controller_are_served(self) -> None:
-        pages = {
-            "index.html": "Events",
-            "login.html": "does not sign you in",
-            "signup.html": "Account creation is not available",
-            "items.html": "item-search",
-            "item.html": "Adding items to a cart is not available",
-            "cart.html": "Customer carts",
-            "checkout.html": "Customer checkout is not available",
-            "orders.html": "Personal order history",
-            "events.html": "Customer registration and unregistration",
-            "appointments.html": "Booking and personal appointment lists",
-            "profile.html": "Viewing and editing a personal profile",
-        }
-        for filename, content in pages.items():
-            with self.subTest(page=filename):
-                with urlopen(f"{self.base_url}/views/customer/{filename}") as response:
-                    self.assertEqual(response.status, 200)
-                    page = response.read().decode("utf-8")
-                self.assertIn(content, page)
-                if filename == "index.html":
-                    self.assertNotIn("Featured items", page)
-                    self.assertNotIn('id="items-list"', page)
-                self.assertIn('href="/css/style.css"', page)
-                self.assertIn("/controllers/customer_controller.js", page)
-
-        with urlopen(self.base_url + "/controllers/customer_controller.js") as response:
-            self.assertIn("javascript", response.headers.get_content_type())
-            controller = response.read().decode("utf-8")
-        self.assertIn("/api/inventory", controller)
-        self.assertIn("/api/events", controller)
-
-    def test_admin_pages_use_shared_stylesheet(self) -> None:
-        for filename in (
-            "index.html", "items.html", "inventory.html",
-            "orders.html", "events.html", "appointments.html",
-        ):
-            with self.subTest(page=filename):
-                with urlopen(f"{self.base_url}/views/admin/{filename}") as response:
-                    self.assertEqual(response.status, 200)
-                    page = response.read().decode("utf-8")
-                self.assertIn('href="/css/style.css"', page)
-                self.assertNotIn("#007bff", page.lower())
-                self.assertNotIn("#0056b3", page.lower())
-
-    def test_customer_home_and_admin_dashboard_share_navigation(self) -> None:
-        for path in ("/views/customer/index.html", "/views/admin/index.html"):
-            with self.subTest(page=path):
+        for path in ("/", "/view/index.html", "/views/index.html"):
+            with self.subTest(path=path):
                 with urlopen(self.base_url + path) as response:
-                    page = response.read().decode("utf-8")
-                self.assertIn('class="home-nav" aria-label="Main navigation"', page)
-                self.assertIn('src="/controllers/home_navigation.js"', page)
-        with urlopen(self.base_url + "/controllers/home_navigation.js") as response:
-            self.assertIn("javascript", response.headers.get_content_type())
-            navigation = response.read().decode("utf-8")
-        for href in (
-            "/views/customer/index.html",
-            "/views/customer/items.html",
-            "/views/customer/appointments.html",
-            "/views/customer/cart.html",
-            "/views/customer/login.html",
-            "/views/customer/signup.html",
-        ):
-            with self.subTest(link=href):
-                self.assertIn(f'"{href}"', navigation)
-                with urlopen(self.base_url + href) as response:
                     self.assertEqual(response.status, 200)
-        self.assertIn('"/#login-title"', navigation)
-        self.assertIn("Signup unavailable", navigation)
+                    page = response.read().decode("utf-8")
+                self.assertIn('<div id="root"></div>', page)
+                self.assertRegex(page, r'src="/assets/[^"]+\.js"')
+                self.assertRegex(page, r'href="/assets/[^"]+\.css"')
+                for asset in re.findall(r'(?:src|href)="(/assets/[^"]+)"', page):
+                    with urlopen(self.base_url + asset) as response:
+                        self.assertEqual(response.status, 200)
+
+    def test_customer_and_admin_routes_serve_built_frontend(self) -> None:
+        pages = {
+            "customer": ("index", "items", "item", "events", "appointments",
+                         "cart", "checkout", "orders", "profile", "login", "signup"),
+            "admin": ("index", "items", "inventory", "orders", "events", "appointments"),
+        }
+        for section, names in pages.items():
+            for name in names:
+                with self.subTest(section=section, page=name):
+                    with urlopen(f"{self.base_url}/views/{section}/{name}.html?id=1") as response:
+                        self.assertEqual(response.status, 200)
+                        page = response.read().decode("utf-8")
+                    self.assertIn('<div id="root"></div>', page)
+                    for asset in re.findall(r'(?:src|href)="(/assets/[^"]+)"', page):
+                        with urlopen(self.base_url + asset) as response:
+                            self.assertEqual(response.status, 200)
+                    self.assertRegex(page, r'src="/assets/[^"]+\.js"')
+                    self.assertRegex(page, r'href="/assets/[^"]+\.css"')
+
+    def test_missing_frontend_build_reports_error(self) -> None:
+        with patch("backend.apis.local_website_api.FRONTEND_BUILD_DIR", Path(self.temp_dir.name) / "missing"):
+            for path in ("/", "/views/customer/login.html"):
+                with self.subTest(path=path):
+                    with self.assertRaises(HTTPError) as error:
+                        urlopen(self.base_url + path)
+                    self.assertEqual(error.exception.code, 503)
 
     def test_login_endpoint_calls_profile_login_and_returns_role(self) -> None:
         ManageProfile(self.database_path).createAccount(
@@ -241,6 +158,18 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
             payload["user"],
             {"name": "Login Test", "is_admin": False},
         )
+        self.assertRegex(payload["token"], r"^[A-Za-z0-9_-]{43}$")
+        self.assertIsInstance(payload["expires_at"], int)
+        with closing(sqlite3.connect(self.database_path)) as connection:
+            row = connection.execute(
+                "SELECT token_hash, admin_id, customer_id, created_at, expires_at "
+                "FROM user_session"
+            ).fetchone()
+        self.assertEqual(row[0], hashlib.sha256(payload["token"].encode("ascii")).hexdigest())
+        self.assertIsNone(row[1])
+        self.assertIsNotNone(row[2])
+        self.assertEqual(row[4], payload["expires_at"])
+        self.assertEqual(row[4] - row[3], SESSION_LIFETIME_SECONDS)
         log_output = "\n".join(logs.output)
         self.assertIn(
             "Login input received (email supplied, password supplied)",
@@ -249,6 +178,69 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
         self.assertIn("Login output: successful authentication", log_output)
         self.assertNotIn("test-password", log_output)
         self.assertNotIn("login@example.com", log_output)
+        self.assertNotIn(payload["token"], log_output)
+
+    def test_sessions_validate_expire_and_logout_independently_for_both_roles(self) -> None:
+        profile = ManageProfile(self.database_path)
+        profile.createAccount(Customer(name="Customer", email="customer@example.com"), "password1")
+        profile.createAccount(Admin(name="Admin", email="admin@example.com"), "password2")
+        sessions = []
+        with patch("backend.apis.session_api.time.time", return_value=1_000_000):
+            for email, password in (
+                ("customer@example.com", "password1"),
+                ("admin@example.com", "password2"),
+            ):
+                with self._post_login({"email": email, "password": password}) as response:
+                    self.assertEqual(response.status, 200)
+                    sessions.append(json.load(response))
+            self.assertNotEqual(sessions[0]["token"], sessions[1]["token"])
+            for item in sessions:
+                with self._session_request("/api/session", item["token"]) as response:
+                    self.assertEqual(response.status, 200)
+                    self.assertEqual(json.load(response)["user"], item["user"])
+            with self._session_request("/api/logout", sessions[0]["token"], "POST") as response:
+                self.assertEqual(response.status, 200)
+            with self._session_request("/api/session", sessions[0]["token"]) as response:
+                self.assertEqual(response.status, 401)
+            with self._session_request("/api/session", sessions[1]["token"]) as response:
+                self.assertEqual(response.status, 200)
+        with patch("backend.apis.session_api.time.time", return_value=1_000_000 + SESSION_LIFETIME_SECONDS):
+            with self._session_request("/api/session", sessions[1]["token"]) as response:
+                self.assertEqual(response.status, 401)
+            with self._post_login({"email": "customer@example.com", "password": "password1"}) as response:
+                self.assertEqual(response.status, 200)
+            with closing(sqlite3.connect(self.database_path)) as connection:
+                self.assertEqual(connection.execute("SELECT COUNT(*) FROM user_session").fetchone()[0], 1)
+
+    def test_session_endpoints_reject_missing_and_invalid_tokens(self) -> None:
+        for token in ("", "not-a-token", "a" * 43):
+            for path, method in (("/api/session", "GET"), ("/api/logout", "POST")):
+                with self.subTest(token=token, path=path):
+                    with self._session_request(path, token, method) as response:
+                        self.assertEqual(response.status, 401)
+
+    def test_login_session_database_failure_returns_error(self) -> None:
+        ManageProfile(self.database_path).createAccount(
+            Customer(name="Login Test", email="login@example.com"), "test-password"
+        )
+        with patch("backend.apis.local_website_api.SessionManager.create", side_effect=sqlite3.OperationalError("test")):
+            with self._post_login({"email": "login@example.com", "password": "test-password"}) as response:
+                self.assertEqual(response.status, 500)
+                self.assertNotIn("token", json.load(response))
+
+    def test_session_database_failures_return_errors(self) -> None:
+        for path, method, operation in (
+            ("/api/session", "GET", "get_user"),
+            ("/api/logout", "POST", "revoke"),
+        ):
+            with self.subTest(path=path):
+                with patch(
+                    f"backend.apis.local_website_api.SessionManager.{operation}",
+                    side_effect=sqlite3.OperationalError("test"),
+                ):
+                    with self._session_request(path, "a" * 43, method) as response:
+                        self.assertEqual(response.status, 500)
+                        self.assertEqual(json.load(response)["status"], "error")
 
     def test_local_demo_login_is_created_idempotently(self) -> None:
         ensure_local_demo_login(self.database_path)
@@ -298,6 +290,8 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
         self.assertEqual(payload["message"], "Email or password is incorrect.")
         self.assertIn("Login output: rejected credentials", "\n".join(logs.output))
         self.assertNotIn("wrong-password", "\n".join(logs.output))
+        with closing(sqlite3.connect(self.database_path)) as connection:
+            self.assertEqual(connection.execute("SELECT COUNT(*) FROM user_session").fetchone()[0], 0)
 
     def test_dashboard_shows_orders_and_payment_history(self) -> None:
         with self.assertLogs("backend", level="DEBUG") as logs:
@@ -561,12 +555,6 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
             with self._call(method, path) as response:
                 self.assertEqual(response.code, 404)
 
-    def test_card_form_defaults_are_valid_and_prefilled(self) -> None:
-        with urlopen(self.base_url + "/") as response:
-            page = response.read().decode("utf-8")
-        for value in ("4242424242424242", "12/30", "123"):
-            self.assertIn(f'value="{value}"', page)
-
     def _post_payment(self, payload: dict[str, object]):
         request = Request(
             self.base_url + "/api/payments",
@@ -585,6 +573,17 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
             data=json.dumps(payload).encode("utf-8"),
             headers={"Content-Type": "application/json"},
             method="POST",
+        )
+        try:
+            return urlopen(request)
+        except HTTPError as error:
+            return error
+
+    def _session_request(self, path: str, token: str, method: str = "GET"):
+        request = Request(
+            self.base_url + path,
+            headers={"Authorization": f"Bearer {token}"} if token else {},
+            method=method,
         )
         try:
             return urlopen(request)

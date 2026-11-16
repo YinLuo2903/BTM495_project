@@ -5,7 +5,7 @@ A full-stack bike shop in one command: online checkout, credit card payments, li
 ```mermaid
 flowchart LR
     U(["User<br/>(browser)"])
-    FE["<b>1. Frontend</b><br/>HTML, CSS, JS<br/>input and display only"]
+    FE["<b>1. Frontend</b><br/>React, TypeScript, CSS<br/>input and display only"]
     BE["<b>2. Backend</b><br/>routes, rules,<br/>models, responses"]
     DB[("<b>3. SQL layer</b><br/>SQLite<br/>one source of truth")]
 
@@ -28,8 +28,10 @@ cd BTM495_project
 
 **Step 2. Run the start script (one line)**
 
-It creates the Python environment (skipped if it already exists), starts the
-local website, and opens it in your browser. Requires Python 3.10 or newer.
+It creates the Python environment if needed, installs frontend dependencies on
+first run (`npm ci`), builds the React frontend (`npm run build`), then starts
+the Python server and opens `http://localhost:8765/`. Requires Python 3.10 or
+newer and npm with Node.js 20.19+ on 20.x, 22.12+ on 22.x, or 24+.
 
 Windows:
 
@@ -43,14 +45,19 @@ macOS / Linux:
 bash start.sh
 ```
 
-Press `Ctrl+C` in the terminal to stop the server. If the browser does not
-open, go to `http://localhost:8765/`.
+Press `Ctrl+C` to stop. Add `--no-browser` to skip opening the browser. If the
+lockfile changes, delete `frontend/node_modules` (or run `npm ci` in
+`frontend`) before the next start.
+
+Optional, for hot reload while editing the frontend: keep the start script
+running and, in a second terminal, run `npm run dev` in `frontend`, then open
+`http://localhost:5173/` instead.
 
 **Step 3. Try the features in the browser**
 
 | Section on the page | What to try |
 | --- | --- |
-| Test profile login | Log in with `login@example.com` / `1234`. |
+| Profile login | Sign in with `login@example.com` / `1234`. |
 | Database structure | See all tables and row counts. `status` has 3 rows: Pending, Completed, Cancelled. Click **Refresh data** to reload. |
 | Orders | Click **Make a payment** to create a $50 sample order. Use the edit and delete icons on a row, or **Remove all orders**. |
 | Mock credit card | The form is prefilled with a valid test card. Click **Review payment** and confirm. Any other card number is declined. |
@@ -60,16 +67,50 @@ open, go to `http://localhost:8765/`.
 
 No real payment is made and card details are never stored.
 
-The [customer views](frontend/views/customer/index.html) are also available at
+The customer views are also available at
 `http://localhost:8765/views/customer/index.html`, linked from the local demo.
-They include a browsable catalog, event list, and credential check. Other
+They include a browsable catalog, event list, and login. Other
 customer pages are view scaffolds: signup, personal orders, cart, checkout,
 event registration, appointments, and profile editing are not yet available.
-The login check does not create a session.
+Both login forms retain the session in the browser. The customer login redirects
+customers to the home page and admins to the admin dashboard; use **Sign Out**
+in the shared navigation or on the local demo page to revoke the session. Both
+forms include a password visibility toggle and display sign-in progress and
+errors.
 The customer home and admin dashboard share a navigation bar linking to the
-customer home, items, appointments, cart, credential checks, and customer
-signup. Admin signup is not yet available; customer signup, appointments, and
-cart pages are scaffolds. The local demo remains available at `/`.
+customer home, items, events, appointments, login, and profile pages.
+Admin signup is not yet available; customer signup, appointments, and
+cart pages are scaffolds. The local demo remains available at `/`. Admin
+inventory and event pages use the existing inventory and event APIs. Event
+editing, event dates and locations, appointment management, and order status
+updates are not supported by those APIs and are identified as unavailable.
+
+### Frontend development
+
+The customer and admin screens are React components in
+[`frontend/src`](frontend/src). The Python server serves their Vite build at
+the existing `/views/customer/*.html` and `/views/admin/*.html` URLs. The
+local demo at `/` is also a React page. The only source HTML is the minimal
+Vite entry shell; page content is implemented in TSX.
+
+To build or test the frontend explicitly:
+
+```
+cd frontend
+npm ci
+npm run build
+npm test
+```
+
+For automatic test reruns while editing, run `npm run test:watch` in another
+terminal. `npm test` runs the suite once and exits.
+
+Vite serves the frontend and proxies `/api` and `/assets` to the Python
+server, keeping the demo and frontend on the same origin. If the Python
+server uses a different port, set `VITE_BACKEND_ORIGIN` before starting Vite
+(for example, in PowerShell: `$env:VITE_BACKEND_ORIGIN='http://127.0.0.1:8766'`).
+For a standalone Python-served frontend, run `npm run build` first; this is
+not needed when using Vite's development server.
 
 ## Run the tests
 
@@ -77,9 +118,14 @@ cart pages are scaffolds. The local demo remains available at `/`.
 python -m unittest discover -s tests -p "test_*.py"
 ```
 
-The last line should say `OK`. Warning and error log lines in the middle of
+Build the frontend first with `npm ci` and `npm run build` in `frontend` so
+the page-serving tests can exercise its generated assets. The last line should
+say `OK`. Warning and error log lines in the middle of
 the run are expected. The tests use temporary databases, so they do not change
 your data.
+
+The frontend test suite covers the session, login, shared layout, customer and
+admin pages, and the local demo's primary interactions.
 
 ## Optional config
 
@@ -91,11 +137,14 @@ your data.
 
 | Folder / file | Purpose |
 | --- | --- |
-| `frontend/views/` | Website page markup and styles |
+| `frontend/src/main.tsx` | React entry point; picks the page from the URL |
+| `frontend/src/views/customer/` | Customer screens; unsupported actions are identified |
+| `frontend/src/views/admin/` | Admin screens; unsupported actions are identified |
+| `frontend/src/views/demo/` | Local dry-run dashboard, payment, inventory, and event widgets |
+| `frontend/src/components/` | Shared layout and navigation |
+| `frontend/src/services/` | API client and login session helpers |
 | `frontend/css/style.css` | Shared styles for all website pages |
-| `frontend/views/customer/` | Customer-facing pages; unsupported actions are labelled and disabled |
-| `frontend/views/admin/` | Admin views |
-| `backend/controllers/` | Browser-side JavaScript modules for the dashboard, login, orders and payments, inventory, and events |
+| `frontend/tests/` | Vite dev-server test (each `*.test.tsx` sits next to its source file) |
 | `backend/apis/` | Local website server and application operations (profiles, cart, orders, payments, inventory, events) |
 | `backend/models/` | Python classes for users, items, carts, orders, payments, events, appointments |
 | `backend/utils/` | SQLite query builder and transactions, validation, logging, responses, table/column/status constants |
@@ -108,6 +157,33 @@ Accounts: `createAccount` stores a PBKDF2 password hash, and `login` checks
 Admin and Customer accounts by email and password. Passwords must be at least
 eight characters (the local demo account `login@example.com` is the only
 exception).
+
+### Session API
+
+`POST /api/login` accepts a JSON object with `email` and `password`. On
+success it returns `status`, `user`, an opaque `token`, and `expires_at`
+(Unix seconds, UTC). Sessions expire after 24 hours; only a SHA-256 hash of
+the random token is stored in `user_session`. Expired rows are removed when a
+new session is created.
+
+Send `Authorization: Bearer <token>` to `GET /api/session` to check a session
+and retrieve its user, or to `POST /api/logout` to revoke it. An invalid or
+expired session check returns HTTP 401. Multiple sessions can coexist; logout
+revokes only the supplied token. Database initialization adds the table to
+existing databases.
+
+The browser stores the bearer token in localStorage and sends it for session
+checks and logout; the session persists across reloads and expires after 24
+hours. A 401 clears the stored token; network or server errors are displayed
+without silently discarding it.
+
+This is a local demo, not production authentication: other pages and APIs are
+not protected, even when a session exists. Do not expose this server or its
+demo account publicly. Any script executing on the site can read localStorage
+tokens, so an XSS vulnerability could expose them. Production use requires
+HTTPS, authorization on protected endpoints, additional security controls,
+and safer browser session storage such as HttpOnly, Secure, SameSite cookies
+with CSRF protection.
 
 ## Details
 
