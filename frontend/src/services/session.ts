@@ -110,6 +110,26 @@ export async function getSession(): Promise<Session | null> {
   return { user: result.user, expiresAt: stored.expiresAt };
 }
 
+/** Call an API route as the signed-in user (sends the stored session token). */
+export async function sessionApi<T>(path: string, method = "GET", body?: unknown): Promise<T> {
+  const stored = readSession();
+  if (!stored) throw new Error("Please sign in to continue.");
+  const response = await fetch(path, {
+    method, cache: "no-store",
+    headers: { Authorization: `Bearer ${stored.token}`, "Content-Type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const data: unknown = await response.json();
+  if (typeof data !== "object" || data === null || !("status" in data)) {
+    throw new Error("Invalid API response.");
+  }
+  if (!response.ok || data.status !== "ok") {
+    const message = "message" in data && typeof data.message === "string" ? data.message : `Request failed with HTTP ${response.status}`;
+    throw new Error(message);
+  }
+  return data as T;
+}
+
 export async function signOut(): Promise<void> {
   const stored = readSession();
   if (!stored) return;

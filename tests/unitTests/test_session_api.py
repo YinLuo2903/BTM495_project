@@ -21,7 +21,7 @@ class SessionManagerTests(unittest.TestCase):
         self.database_path = Path(self.temp_dir.name) / "test.db"
         initialize_database(self.database_path)
         self.customer = ManageProfile(self.database_path).createAccount(
-            Customer(name="Test", email="test@example.com"), "password1"
+            Customer(first_name="Test", last_name="Tester", email="test@example.com"), "password1"
         )
         self.sessions = SessionManager(self.database_path)
 
@@ -31,7 +31,7 @@ class SessionManagerTests(unittest.TestCase):
             second = self.sessions.create(self.customer)
             self.assertNotEqual(first.token, second.token)
             self.assertEqual(first.expires_at, 1000 + SESSION_LIFETIME_SECONDS)
-            self.assertEqual(self.sessions.get_user(first.token), {"name": "Test", "is_admin": False})
+            self.assertEqual(self.sessions.get_user(first.token), {"name": "Test Tester", "is_admin": False})
             self.assertTrue(self.sessions.revoke(first.token))
             self.assertFalse(self.sessions.revoke(first.token))
             self.assertIsNone(self.sessions.get_user(first.token))
@@ -45,7 +45,7 @@ class SessionManagerTests(unittest.TestCase):
             self.assertIsNone(self.sessions.get_user(token))
             self.assertFalse(self.sessions.revoke(token))
         with self.assertRaises(ValueError):
-            self.sessions.create(Customer(name="Unsaved", email="unsaved@example.com"))
+            self.sessions.create(Customer(first_name="Unsaved", last_name="Tester", email="unsaved@example.com"))
 
     def test_deleted_customer_cascades_and_schema_upgrade_is_idempotent(self) -> None:
         with closing(sqlite3.connect(self.database_path)) as connection:

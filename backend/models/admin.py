@@ -11,7 +11,8 @@ class Admin(User):
         adminID: int | None = None,
         password_hash: str | None = None,
     ) -> None:
-        super().__init__(name, email, phone, address, password_hash)
+        super().__init__(email, phone, address, password_hash)
+        self.name = name
         self.adminID = adminID
 
     @property

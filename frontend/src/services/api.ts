@@ -15,6 +15,15 @@ export interface ShopEvent {
   customer_ids: number[];
 }
 
+export interface CustomerProfile {
+  customer_code: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  address: string;
+}
+
 export async function api<T>(path: string, method = "GET", body?: unknown): Promise<T> {
   const response = await fetch(path, {
     method,

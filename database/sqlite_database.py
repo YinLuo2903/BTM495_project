@@ -32,6 +32,7 @@ _LEGACY_STATUS_IDS = {
 def initialize_database(database_path: str | Path = DB_PATH) -> None:
     database = SQLiteQuery(database_path)
     _park_legacy_status_tables(database)
+    _migrate_customer_names(database)
     with database.session() as connection:
         connection.executescript(
             Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
@@ -93,6 +94,62 @@ def _park_legacy_status_tables(database: SQLiteQuery) -> None:
         except BaseException:
             session.rollback()
             raise
+
+
+def _migrate_customer_names(database: SQLiteQuery) -> None:
+    """Rebuild an old customer table (single name column) with first/last name and code.
+
+    The table is rebuilt rather than altered so it matches schema.sql exactly
+    (a UNIQUE column cannot be added with ALTER TABLE). Foreign keys are switched
+    off while the table is swapped; child tables keep referencing it by name.
+    """
+    with database.session() as session:
+        if DatabaseTables.CUSTOMER not in _table_names(session):
+            return
+        customer_table = quote_identifier(DatabaseTables.CUSTOMER)
+        columns = [
+            row[1] for row in session.fetch_all(f"PRAGMA table_info({customer_table})")
+        ]
+        if DatabaseColumns.NAME not in columns:
+            return
+        rows = session.fetch_all(
+            "SELECT customer_id, name, email, phone, address, password_hash "
+            f"FROM {customer_table}"
+        )
+        session.execute("PRAGMA foreign_keys = OFF")
+        session.execute("BEGIN")
+        try:
+            session.execute(f"DROP TABLE {customer_table}")
+            session.execute(
+                "CREATE TABLE customer ("
+                " customer_id INTEGER PRIMARY KEY,"
+                " customer_code TEXT UNIQUE"
+                "  CHECK (customer_code IS NULL OR"
+                "   customer_code = 'LPVR' || printf('%03d', customer_id)),"
+                " first_name TEXT NOT NULL,"
+                " last_name TEXT NOT NULL DEFAULT '',"
+                " email TEXT UNIQUE,"
+                " phone TEXT,"
+                " address TEXT,"
+                " password_hash TEXT)"
+            )
+            for customer_id, name, email, phone, address, password_hash in rows:
+                first_name, _, last_name = (name or "").strip().partition(" ")
+                session.execute(
+                    "INSERT INTO customer (customer_id, customer_code, first_name,"
+                    " last_name, email, phone, address, password_hash)"
+                    " VALUES (?, 'LPVR' || printf('%03d', ?), ?, ?, ?, ?, ?, ?)",
+                    (
+                        customer_id, customer_id, first_name, last_name.strip(),
+                        email, phone, address, password_hash,
+                    ),
+                )
+            session.execute("COMMIT")
+        except BaseException:
+            session.rollback()
+            raise
+        finally:
+            session.execute("PRAGMA foreign_keys = ON")
 
 
 def _has_foreign_keys(session: SQLiteSession, table: str) -> bool:

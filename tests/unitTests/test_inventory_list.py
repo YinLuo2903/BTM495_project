@@ -195,7 +195,7 @@ class InventoryListTests(unittest.TestCase):
     def test_remove_is_blocked_when_orders_use_the_item(self) -> None:
         self.inventory.addItem(self.part)
         with closing(sqlite3.connect(self.database_path)) as connection:
-            connection.execute("INSERT INTO customer (customer_id, name) VALUES (1, 'A')")
+            connection.execute("INSERT INTO customer (customer_id, first_name) VALUES (1, 'A')")
             connection.execute("INSERT INTO orders (order_id, customer_id) VALUES (1, 1)")
             connection.execute(
                 "INSERT INTO order_item (order_id, item_id, quantity, unit_price) "

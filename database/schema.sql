@@ -11,14 +11,34 @@ CREATE TABLE IF NOT EXISTS admin (
 );
 
 --2. Customer Table
+-- customer_id is the internal key that other tables link to. customer_code is the
+-- customer-facing ID (LPVR001, LPVR002, ...) and is always derived from customer_id.
 CREATE TABLE IF NOT EXISTS customer (
     customer_id INTEGER PRIMARY KEY,
-    name TEXT NOT NULL,
+    customer_code TEXT UNIQUE
+        CHECK (customer_code IS NULL OR customer_code = 'LPVR' || printf('%03d', customer_id)),
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL DEFAULT '',
     email TEXT UNIQUE,
     phone TEXT,
     address TEXT,
     password_hash TEXT
 );
+
+-- Assign the LPVR customer code as soon as a customer row is saved.
+CREATE TRIGGER IF NOT EXISTS customer_assign_code
+AFTER INSERT ON customer
+WHEN NEW.customer_code IS NULL
+BEGIN
+    UPDATE customer
+    SET customer_code = 'LPVR' || printf('%03d', NEW.customer_id)
+    WHERE customer_id = NEW.customer_id;
+END;
+
+-- Backfill codes for customers saved before codes existed.
+UPDATE customer
+SET customer_code = 'LPVR' || printf('%03d', customer_id)
+WHERE customer_code IS NULL;
 
 CREATE TABLE IF NOT EXISTS user_session (
     token_hash TEXT PRIMARY KEY NOT NULL,

@@ -27,6 +27,9 @@ class DatabaseColumns:
     PAYMENT_ID = "payment_id"
     ADMIN_ID = "admin_id"
     NAME = "name"
+    FIRST_NAME = "first_name"
+    LAST_NAME = "last_name"
+    CUSTOMER_CODE = "customer_code"
     EMAIL = "email"
     PHONE = "phone"
     ADDRESS = "address"
@@ -83,7 +86,9 @@ DATABASE_SCHEMA_COLUMNS = {
     ),
     DatabaseTables.CUSTOMER: (
         DatabaseColumns.CUSTOMER_ID,
-        DatabaseColumns.NAME,
+        DatabaseColumns.CUSTOMER_CODE,
+        DatabaseColumns.FIRST_NAME,
+        DatabaseColumns.LAST_NAME,
         DatabaseColumns.EMAIL,
         DatabaseColumns.PHONE,
         DatabaseColumns.ADDRESS,

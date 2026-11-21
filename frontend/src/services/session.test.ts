@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, afterEach, expect, it, vi } from "vitest";
-import { getSession, signIn, signOut, watchSession } from "./session";
+import { getSession, sessionApi, signIn, signOut, watchSession } from "./session";
 
 const token = "a".repeat(43);
 const otherToken = "b".repeat(43);
@@ -92,4 +92,16 @@ it("unsubscribes session watchers", async () => {
   window.dispatchEvent(new Event("lpvr-session-change"));
   await Promise.resolve();
   expect(callback).toHaveBeenCalledOnce();
+});
+
+it("sends the stored token with authenticated API calls", async () => {
+  await expect(sessionApi("/api/profile")).rejects.toThrow("Please sign in");
+  localStorage.setItem("lpvr.session", JSON.stringify({ token, expiresAt: 2000000000 }));
+  const fetch = vi.fn(async (_path: string, _options: RequestInit) => response(200, { status: "ok", customer: { customer_code: "LPVR001" } }));
+  vi.stubGlobal("fetch", fetch);
+  expect(await sessionApi("/api/profile", "PATCH", { phone: "1" })).toEqual({ status: "ok", customer: { customer_code: "LPVR001" } });
+  expect(fetch.mock.calls[0][1].headers).toMatchObject({ Authorization: `Bearer ${token}` });
+  expect(fetch.mock.calls[0][1].body).toBe(JSON.stringify({ phone: "1" }));
+  fetch.mockResolvedValueOnce(response(401, { status: "error", message: "Sign in with a customer account." }));
+  await expect(sessionApi("/api/profile")).rejects.toThrow("Sign in with a customer account.");
 });

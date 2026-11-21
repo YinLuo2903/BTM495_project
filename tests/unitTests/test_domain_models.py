@@ -170,7 +170,7 @@ class ShoppingCartTests(unittest.TestCase):
         initialize_database(self.database_path)
         with closing(sqlite3.connect(self.database_path)) as connection:
             connection.execute(
-                "INSERT INTO customer (customer_id, name) VALUES (1, 'Casey')"
+                "INSERT INTO customer (customer_id, first_name) VALUES (1, 'Casey')"
             )
             connection.executemany(
                 "INSERT INTO item (item_id, name, description, price) "

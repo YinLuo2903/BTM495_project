@@ -27,6 +27,17 @@ def is_valid_password(password: object, minimum_length: int = 8) -> bool:
     return isinstance(password, str) and len(password) >= minimum_length
 
 
+_PHONE_CHARACTERS = set("0123456789 +-().")
+
+
+def is_valid_phone(phone: object) -> bool:
+    """Accept common phone formats such as 514-555-0123 or +1 (514) 555 0123."""
+    if not isinstance(phone, str) or not set(phone) <= _PHONE_CHARACTERS:
+        return False
+    digits = sum(character.isdigit() for character in phone)
+    return 7 <= digits <= 15
+
+
 def is_valid_profile(name: object, email: object) -> bool:
     return isinstance(name, str) and bool(name.strip()) and is_valid_email(email)
 

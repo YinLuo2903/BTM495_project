@@ -32,7 +32,8 @@ class ManageProfileTests(unittest.TestCase):
     def test_create_and_get_customer_profile(self) -> None:
         user = self.create_profile(
             Customer(
-                name="Alice",
+                first_name="Alice",
+                last_name="Smith",
                 email="alice@example.com",
                 phone="555-0100",
                 address="10 Bike Lane",
@@ -44,7 +45,10 @@ class ManageProfileTests(unittest.TestCase):
         self.assertIsNotNone(user.customerID)
         self.assertIsNotNone(saved_user)
         self.assertEqual(saved_user.customerID, user.customerID)
-        self.assertEqual(saved_user.name, "Alice")
+        self.assertEqual(saved_user.name, "Alice Smith")
+        self.assertEqual(saved_user.first_name, "Alice")
+        self.assertEqual(saved_user.last_name, "Smith")
+        self.assertEqual(saved_user.customerCode, f"LPVR{user.customerID:03d}")
         self.assertEqual(saved_user.email, "alice@example.com")
         self.assertEqual(saved_user.phone, "555-0100")
         self.assertEqual(saved_user.address, "10 Bike Lane")
@@ -52,7 +56,7 @@ class ManageProfileTests(unittest.TestCase):
 
     def test_create_account_and_login_find_matching_role(self) -> None:
         customer = self.profile_manager.createAccount(
-            Customer(name="Alice", email="alice@example.com"),
+            Customer(first_name="Alice", last_name="Tester", email="alice@example.com"),
             "correct-horse",
         )
         admin = self.profile_manager.createAccount(
@@ -76,7 +80,7 @@ class ManageProfileTests(unittest.TestCase):
 
     def test_login_rejects_identical_credentials_for_both_roles(self) -> None:
         self.profile_manager.createAccount(
-            Customer(name="Alice", email="shared@example.com"),
+            Customer(first_name="Alice", last_name="Tester", email="shared@example.com"),
             "shared-password",
         )
         self.profile_manager.createAccount(
@@ -91,7 +95,7 @@ class ManageProfileTests(unittest.TestCase):
     def test_create_account_rejects_short_password(self) -> None:
         with self.assertRaisesRegex(ValueError, "at least 8 characters"):
             self.profile_manager.createAccount(
-                Customer(name="Alice", email="alice@example.com"),
+                Customer(first_name="Alice", last_name="Tester", email="alice@example.com"),
                 "short",
             )
 
@@ -104,13 +108,14 @@ class ManageProfileTests(unittest.TestCase):
 
     def test_update_profile_changes_name(self) -> None:
         customer = self.create_profile(
-            Customer(name="Alice", email="alice@example.com")
+            Customer(first_name="Alice", last_name="Tester", email="alice@example.com")
         )
-        customer.name = "Alice Updated"
+        customer.last_name = "Updated"
 
         self.assertTrue(self.profile_manager.updateProfile(customer))
         updated = self.profile_manager.login(customer.email, "test-password")
         self.assertEqual(updated.name, "Alice Updated")
+        self.assertEqual(updated.last_name, "Updated")
 
     def test_create_and_get_admin_profile(self) -> None:
         admin = self.create_profile(
@@ -135,7 +140,7 @@ class ManageProfileTests(unittest.TestCase):
 
     def test_update_profile_persists_password_hash(self) -> None:
         user = self.create_profile(
-            Customer(name="Alice", email="alice@example.com")
+            Customer(first_name="Alice", last_name="Tester", email="alice@example.com")
         )
         user.password_hash = "updated-test-hash"
 
@@ -149,9 +154,9 @@ class ManageProfileTests(unittest.TestCase):
 
     def test_update_profile_changes_name_and_phone(self) -> None:
         user = self.create_profile(
-            Customer(name="Alice", email="alice@example.com")
+            Customer(first_name="Alice", last_name="Tester", email="alice@example.com")
         )
-        user.name = "Alice Smith"
+        user.last_name = "Smith"
         user.phone = "555-0199"
 
         self.assertTrue(self.profile_manager.updateProfile(user))
@@ -161,24 +166,34 @@ class ManageProfileTests(unittest.TestCase):
         self.assertEqual(saved_user.phone, "555-0199")
 
     def test_profile_requires_name_and_email(self) -> None:
+        with self.assertRaisesRegex(ValueError, "First name is required"):
+            self.profile_manager.createAccount(
+                Customer(first_name=" ", last_name="Tester", email="alice@example.com"), "test-password"
+            )
+
+        with self.assertRaisesRegex(ValueError, "Last name is required"):
+            self.profile_manager.createAccount(
+                Customer(first_name="Alice", last_name="", email="alice@example.com"), "test-password"
+            )
+
         with self.assertRaisesRegex(ValueError, "Name is required"):
             self.profile_manager.createAccount(
-                Customer(name=" ", email="alice@example.com"), "test-password"
+                Admin(name=" ", email="admin@example.com"), "test-password"
             )
 
         with self.assertRaisesRegex(ValueError, "Email is required"):
             self.profile_manager.createAccount(
-                Customer(name="Alice", email=" "), "test-password"
+                Customer(first_name="Alice", last_name="Tester", email=" "), "test-password"
             )
 
         with self.assertRaisesRegex(ValueError, "Email must contain"):
             self.profile_manager.createAccount(
-                Customer(name="Alice", email="invalid"), "test-password"
+                Customer(first_name="Alice", last_name="Tester", email="invalid"), "test-password"
             )
 
     def test_update_profile_uses_the_same_email_validation(self) -> None:
         user = self.create_profile(
-            Customer(name="Alice", email="alice@example.com")
+            Customer(first_name="Alice", last_name="Tester", email="alice@example.com")
         )
         user.email = "invalid"
 
@@ -200,14 +215,14 @@ class ManageProfileTests(unittest.TestCase):
     def test_role_emails_remain_unique_across_tables(self) -> None:
         self.create_profile(Admin(name="Morgan", email="same@example.com"))
 
-        self.create_profile(Customer(name="Taylor", email="same@example.com"))
+        self.create_profile(Customer(first_name="Taylor", last_name="Tester", email="same@example.com"))
 
     def test_email_is_unique_within_each_role_table(self) -> None:
         admin = self.create_profile(
             Admin(name="Morgan", email="admin@example.com")
         )
         customer = self.create_profile(
-            Customer(name="Taylor", email="customer@example.com")
+            Customer(first_name="Taylor", last_name="Tester", email="customer@example.com")
         )
 
         with self.assertRaises(sqlite3.IntegrityError):
@@ -216,7 +231,7 @@ class ManageProfileTests(unittest.TestCase):
             )
         with self.assertRaises(sqlite3.IntegrityError):
             self.create_profile(
-                Customer(name="Another Customer", email=customer.email)
+                Customer(first_name="Another", last_name="Customer", email=customer.email)
             )
 
     def test_only_requested_operations_are_public(self) -> None:
@@ -229,6 +244,7 @@ class ManageProfileTests(unittest.TestCase):
             public_methods,
             {
                 "createAccount",
+                "getProfile",
                 "login",
                 "updateProfile",
                 "validateInformation",
@@ -275,7 +291,7 @@ class ManageProfileTests(unittest.TestCase):
                 BEGIN
                     SELECT RAISE(ABORT, 'email already belongs to another account');
                 END;
-                INSERT INTO customer (name, email) VALUES ('Taylor', 'shared@example.com');
+                INSERT INTO customer (first_name, email) VALUES ('Taylor', 'shared@example.com');
                 """
             )
 

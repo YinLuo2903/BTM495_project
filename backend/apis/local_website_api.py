@@ -10,6 +10,7 @@ from urllib.parse import urlsplit
 
 from backend.apis.local_website_extra_api import handle_route, is_extra_route
 from backend.apis.profile_api import ManageProfile
+from backend.models.customer import Customer
 from backend.apis.session_api import SessionManager
 from backend.models.payment import Payment, PaymentMethod, PaymentStatus
 from backend.utils.constants import DatabaseColumns, DatabaseTables, DatabaseValues
@@ -73,7 +74,8 @@ def ensure_local_demo_login(database_path: str | Path = DB_PATH) -> None:
         session.insert(
             DatabaseTables.CUSTOMER,
             {
-                DatabaseColumns.NAME: "Local Dry-Run",
+                DatabaseColumns.FIRST_NAME: "Local",
+                DatabaseColumns.LAST_NAME: "Dry-Run",
                 DatabaseColumns.EMAIL: LOCAL_DEMO_LOGIN_EMAIL,
                 DatabaseColumns.PASSWORD_HASH: profile._hashPassword(
                     LOCAL_DEMO_LOGIN_PASSWORD
@@ -281,6 +283,9 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
         if request_path == "/api/session":
             self._get_session()
             return
+        if request_path == "/api/profile":
+            self._get_profile()
+            return
         if request_path == "/api/status":
             self._send_database_status()
             return
@@ -300,6 +305,9 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
 
     def do_PATCH(self) -> None:
         if self._extra_route("PATCH"):
+            return
+        if urlsplit(self.path).path == "/api/profile":
+            self._update_profile()
             return
         resource, record_id = self._record_route()
         if resource is None or record_id is None:
@@ -397,6 +405,9 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
             return
         if request_path == "/api/logout":
             self._logout()
+            return
+        if request_path == "/api/signup":
+            self._signup()
             return
         if request_path != "/api/payments":
             self._send_json({"status": "error", "message": "Not found."}, 404)
@@ -575,6 +586,162 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
             return
         self._send_json({"status": "ok"}, 200)
 
+    @staticmethod
+    def _profile_json(customer: Customer) -> dict[str, object]:
+        return {
+            "customer_code": customer.customerCode,
+            "first_name": customer.first_name,
+            "last_name": customer.last_name,
+            "email": customer.email,
+            "phone": customer.phone,
+            "address": customer.address,
+        }
+
+    def _signup(self) -> None:
+        try:
+            payload = read_json_object(
+                self, self.MAX_REQUEST_BYTES, request_name="Signup"
+            )
+        except HTTPRequestError as error:
+            self._send_json(
+                {"status": "error", "message": str(error)}, error.status_code
+            )
+            return
+
+        customer = Customer(
+            first_name=string_value(payload, "first_name").strip(),
+            last_name=string_value(payload, "last_name").strip(),
+            email=string_value(payload, "email").strip(),
+            phone=string_value(payload, "phone").strip(),
+            address=string_value(payload, "address").strip(),
+        )
+        for label, value in (
+            ("Phone number", customer.phone),
+            ("Home address", customer.address),
+        ):
+            if not value:
+                self._send_json(
+                    {"status": "error", "message": f"{label} is required."}, 400
+                )
+                return
+        try:
+            ManageProfile(DB_PATH).createAccount(
+                customer, string_value(payload, "password")
+            )
+        except ValueError as error:
+            self._send_json({"status": "error", "message": str(error)}, 400)
+            return
+        except sqlite3.IntegrityError:
+            self._send_json(
+                {
+                    "status": "error",
+                    "message": "An account with this email already exists.",
+                },
+                409,
+            )
+            return
+        except sqlite3.Error:
+            logger.exception("Could not create customer account")
+            self._send_json(
+                {"status": "error", "message": "Could not create the account."}, 500
+            )
+            return
+
+        logger.info("Signup output: created customer %s", customer.customerCode)
+        self._send_json(
+            {"status": "ok", "customer": self._profile_json(customer)}, 201
+        )
+
+    def _session_customer(self) -> Customer | None:
+        """Return the signed-in customer, or send an error response and return None."""
+        try:
+            customer_id = SessionManager(DB_PATH).get_customer_id(self._bearer_token())
+            customer = (
+                None
+                if customer_id is None
+                else ManageProfile(DB_PATH).getProfile(customer_id)
+            )
+        except sqlite3.Error:
+            logger.exception("Could not load customer profile")
+            self._send_json(
+                {"status": "error", "message": "Could not load the profile."}, 500
+            )
+            return None
+        if customer is None:
+            self._send_json(
+                {
+                    "status": "error",
+                    "message": "Sign in with a customer account to view your profile.",
+                },
+                401,
+            )
+        return customer
+
+    def _get_profile(self) -> None:
+        customer = self._session_customer()
+        if customer is not None:
+            self._send_json(
+                {"status": "ok", "customer": self._profile_json(customer)}, 200
+            )
+
+    def _update_profile(self) -> None:
+        customer = self._session_customer()
+        if customer is None:
+            return
+        try:
+            payload = read_json_object(
+                self, self.MAX_REQUEST_BYTES, request_name="Profile"
+            )
+        except HTTPRequestError as error:
+            self._send_json(
+                {"status": "error", "message": str(error)}, error.status_code
+            )
+            return
+        editable = {"first_name", "last_name", "email", "phone", "address"}
+        unknown = sorted(set(payload) - editable)
+        if unknown:
+            self._send_json(
+                {"status": "error", "message": f"Unknown field: {', '.join(unknown)}."},
+                400,
+            )
+            return
+        for field in editable & set(payload):
+            if not isinstance(payload[field], str):
+                self._send_json(
+                    {"status": "error", "message": f"{field} must be text."}, 400
+                )
+                return
+            if field in ("phone", "address") and not payload[field].strip():
+                label = "Phone number" if field == "phone" else "Home address"
+                self._send_json(
+                    {"status": "error", "message": f"{label} is required."}, 400
+                )
+                return
+            setattr(customer, field, payload[field].strip())
+        try:
+            ManageProfile(DB_PATH).updateProfile(customer)
+        except ValueError as error:
+            self._send_json({"status": "error", "message": str(error)}, 400)
+            return
+        except sqlite3.IntegrityError:
+            self._send_json(
+                {
+                    "status": "error",
+                    "message": "An account with this email already exists.",
+                },
+                409,
+            )
+            return
+        except sqlite3.Error:
+            logger.exception("Could not update customer profile")
+            self._send_json(
+                {"status": "error", "message": "Could not save the profile."}, 500
+            )
+            return
+        self._send_json(
+            {"status": "ok", "customer": self._profile_json(customer)}, 200
+        )
+
     def _create_sample_order(self) -> None:
         try:
             with _database().transaction() as connection:
@@ -592,7 +759,8 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
                     result = connection.insert(
                         DatabaseTables.CUSTOMER,
                         {
-                            DatabaseColumns.NAME: "Local Payment Demo",
+                            DatabaseColumns.FIRST_NAME: "Local Payment",
+                            DatabaseColumns.LAST_NAME: "Demo",
                             DatabaseColumns.EMAIL: self.DEMO_CUSTOMER_EMAIL,
                         },
                     )

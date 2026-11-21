@@ -143,7 +143,11 @@ def _events(
             )
             customers = session.select(
                 DatabaseTables.CUSTOMER,
-                (DatabaseColumns.CUSTOMER_ID, DatabaseColumns.NAME),
+                (
+                    DatabaseColumns.CUSTOMER_ID,
+                    DatabaseColumns.FIRST_NAME,
+                    DatabaseColumns.LAST_NAME,
+                ),
                 order_by=(SQLOrder(DatabaseColumns.CUSTOMER_ID),),
             )
         return 200, {
@@ -158,8 +162,11 @@ def _events(
                 for event_id, name, limit in events
             ],
             "customers": [
-                {"customer_id": customer_id, "name": name}
-                for customer_id, name in customers
+                {
+                    "customer_id": customer_id,
+                    "name": f"{first_name} {last_name or ''}".strip(),
+                }
+                for customer_id, first_name, last_name in customers
             ],
         }
     if method == "POST" and not rest:

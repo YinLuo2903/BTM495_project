@@ -15,7 +15,12 @@ from backend.models.user import User
 from backend.utils.constants import DatabaseColumns, DatabaseTables
 from backend.utils.response import Response
 from backend.utils.sqlite import SQLiteQuery, SQLCondition
-from backend.utils.validators import is_valid_email, is_valid_password, is_valid_profile
+from backend.utils.validators import (
+    is_valid_email,
+    is_valid_password,
+    is_valid_phone,
+    is_valid_profile,
+)
 from database.sqlite_database import DB_PATH
 
 
@@ -37,16 +42,7 @@ class ManageProfile:
 
     def _insertUser(self, user: User) -> User:
         role_table, _, _ = self._roleDetails(user)
-        result = self.database.insert(
-            role_table,
-            {
-                DatabaseColumns.NAME: user.name,
-                DatabaseColumns.EMAIL: user.email,
-                DatabaseColumns.PHONE: user.phone,
-                DatabaseColumns.ADDRESS: user.address,
-                DatabaseColumns.PASSWORD_HASH: user.password_hash,
-            },
-        )
+        result = self.database.insert(role_table, self._profileValues(user))
         if isinstance(user, Admin):
             user.adminID = result.lastrowid
         else:
@@ -77,11 +73,12 @@ class ManageProfile:
 
     def _getUser(self, roleID: int, userType: type[User]) -> User | None:
         role_table, id_column, _ = self._roleDetailsForType(userType)
+        name_columns = self._nameColumns(userType)
         row = self.database.select_one(
             role_table,
             (
                 id_column,
-                DatabaseColumns.NAME,
+                *name_columns,
                 DatabaseColumns.EMAIL,
                 DatabaseColumns.PHONE,
                 DatabaseColumns.ADDRESS,
@@ -93,16 +90,23 @@ class ManageProfile:
         if row is None:
             return None
 
+        names = row[1 : 1 + len(name_columns)]
+        email, phone, address, password_hash = row[1 + len(name_columns) :]
         profile = {
-            "name": row[1],
-            "email": row[2],
-            "phone": row[3] or "",
-            "address": row[4] or "",
-            "password_hash": row[5],
+            "email": email,
+            "phone": phone or "",
+            "address": address or "",
+            "password_hash": password_hash,
         }
         if userType is Admin:
-            return Admin(adminID=row[0], **profile)
-        return Customer(customerID=row[0], **profile)
+            return Admin(name=names[0], adminID=row[0], **profile)
+        return Customer(
+            first_name=names[0], last_name=names[1] or "", customerID=row[0], **profile
+        )
+
+    def getProfile(self, customerID: int) -> Customer | None:
+        user = self._getUser(customerID, Customer)
+        return user if isinstance(user, Customer) else None
 
     def updateProfile(self, user: User) -> bool:
         role_table, id_column, id_attribute = self._roleDetails(user)
@@ -112,13 +116,7 @@ class ManageProfile:
         self._validateProfile(user)
         result = self.database.update(
             role_table,
-            {
-                DatabaseColumns.NAME: user.name,
-                DatabaseColumns.EMAIL: user.email,
-                DatabaseColumns.PHONE: user.phone,
-                DatabaseColumns.ADDRESS: user.address,
-                DatabaseColumns.PASSWORD_HASH: user.password_hash,
-            },
+            self._profileValues(user),
             where=(SQLCondition(id_column, user_id),),
         )
         return result.rowcount > 0
@@ -138,9 +136,41 @@ class ManageProfile:
     @staticmethod
     def _validateProfile(user: User) -> None:
         ManageProfile._roleDetails(user)
+        if isinstance(user, Customer):
+            for label, value in (
+                ("First name", user.first_name),
+                ("Last name", user.last_name),
+            ):
+                if not isinstance(value, str) or not value.strip():
+                    raise ValueError(f"{label} is required.")
+        if user.phone and not is_valid_phone(user.phone):
+            raise ValueError("Phone number must contain 7 to 15 digits.")
         error = ManageProfile._profileValidationError(user.name, user.email)
         if error is not None:
             raise ValueError(error.msg)
+
+    @staticmethod
+    def _nameColumns(userType: type[User]) -> tuple[str, ...]:
+        if userType is Customer:
+            return (DatabaseColumns.FIRST_NAME, DatabaseColumns.LAST_NAME)
+        return (DatabaseColumns.NAME,)
+
+    @staticmethod
+    def _profileValues(user: User) -> dict[str, object]:
+        if isinstance(user, Customer):
+            names: dict[str, object] = {
+                DatabaseColumns.FIRST_NAME: user.first_name.strip(),
+                DatabaseColumns.LAST_NAME: user.last_name.strip(),
+            }
+        else:
+            names = {DatabaseColumns.NAME: user.name}
+        return {
+            **names,
+            DatabaseColumns.EMAIL: user.email,
+            DatabaseColumns.PHONE: user.phone,
+            DatabaseColumns.ADDRESS: user.address,
+            DatabaseColumns.PASSWORD_HASH: user.password_hash,
+        }
 
     @staticmethod
     def _roleDetails(user: User) -> tuple[str, str, str]:

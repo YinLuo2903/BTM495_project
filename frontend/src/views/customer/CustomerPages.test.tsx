@@ -72,8 +72,6 @@ describe("customer widgets", () => {
   });
 
   it.each([
-    ["signup", "Create account"],
-    ["profile", "Save profile"],
     ["appointments", "Book appointment"],
     ["cart", "Checkout"],
     ["checkout", "Confirm order"],

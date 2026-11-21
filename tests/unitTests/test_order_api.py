@@ -21,7 +21,7 @@ class OrderServiceTests(unittest.TestCase):
         self.database_path = Path(self.temp_dir.name) / "checkout.db"
         initialize_database(self.database_path)
         self.customer = ManageProfile(self.database_path).createAccount(
-            Customer(name="Casey", email="casey@example.com"),
+            Customer(first_name="Casey", last_name="Tester", email="casey@example.com"),
             "order-password",
         )
         with closing(sqlite3.connect(self.database_path)) as connection:
@@ -106,7 +106,7 @@ class OrderServiceTests(unittest.TestCase):
         initialize_database(other_database_path)
         with closing(sqlite3.connect(other_database_path)) as connection:
             connection.execute(
-                "INSERT INTO customer (customer_id, name) VALUES (?, 'Casey')",
+                "INSERT INTO customer (customer_id, first_name) VALUES (?, 'Casey')",
                 (self.customer.customerID,),
             )
             connection.commit()

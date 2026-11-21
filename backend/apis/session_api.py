@@ -62,7 +62,8 @@ class SessionManager:
             return None
         with self.database.session(read_only=True) as session:
             row = session.fetch_one(
-                "SELECT COALESCE(a.name, c.name), s.admin_id IS NOT NULL "
+                "SELECT COALESCE(a.name, TRIM(c.first_name || ' ' || c.last_name)), "
+                "s.admin_id IS NOT NULL "
                 "FROM user_session s "
                 "LEFT JOIN admin a ON a.admin_id = s.admin_id "
                 "LEFT JOIN customer c ON c.customer_id = s.customer_id "
@@ -73,6 +74,18 @@ class SessionManager:
         if row is None:
             return None
         return {"name": row[0], "is_admin": bool(row[1])}
+
+    def get_customer_id(self, token: str) -> int | None:
+        """Internal ID of the customer signed in with this token (None for admins)."""
+        if not _TOKEN_PATTERN.fullmatch(token):
+            return None
+        with self.database.session(read_only=True) as session:
+            row = session.fetch_one(
+                "SELECT customer_id FROM user_session "
+                "WHERE token_hash = ? AND expires_at > ? AND customer_id IS NOT NULL",
+                (self._hash_token(token), int(time.time())),
+            )
+        return None if row is None else row[0]
 
     def revoke(self, token: str) -> bool:
         if not _TOKEN_PATTERN.fullmatch(token):

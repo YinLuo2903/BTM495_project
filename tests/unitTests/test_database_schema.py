@@ -189,8 +189,8 @@ class DatabaseSchemaTests(unittest.TestCase):
             """
             INSERT INTO admin (admin_id, name, email)
                 VALUES (1, 'Morgan Admin', 'admin@example.com');
-            INSERT INTO customer (customer_id, name, email)
-                VALUES (2, 'Casey Customer', 'customer@example.com');
+            INSERT INTO customer (customer_id, first_name, last_name, email)
+                VALUES (2, 'Casey', 'Customer', 'customer@example.com');
             INSERT INTO event
                 (event_id, admin_id, name, description, eventDateTime, participantLimit)
                 VALUES (3, 1, 'Community Ride', 'Group ride', '2026-11-01', 20);
@@ -236,7 +236,7 @@ class DatabaseSchemaTests(unittest.TestCase):
         )
         self.assertEqual(
             self.connection.execute(
-                "SELECT appointment.description, customer.name "
+                "SELECT appointment.description, customer.first_name || ' ' || customer.last_name "
                 "FROM appointment JOIN customer USING (customer_id) "
                 "WHERE appointment_id = 4"
             ).fetchone(),
@@ -259,7 +259,7 @@ class DatabaseSchemaTests(unittest.TestCase):
             ("Morgan", "shared@example.com"),
         )
         self.connection.execute(
-            "INSERT INTO customer (name, email) VALUES (?, ?)",
+            "INSERT INTO customer (first_name, email) VALUES (?, ?)",
             ("Casey", "shared@example.com"),
         )
 
@@ -270,13 +270,13 @@ class DatabaseSchemaTests(unittest.TestCase):
             )
         with self.assertRaises(sqlite3.IntegrityError):
             self.connection.execute(
-                "INSERT INTO customer (name, email) VALUES (?, ?)",
+                "INSERT INTO customer (first_name, email) VALUES (?, ?)",
                 ("Another customer", "shared@example.com"),
             )
 
     def test_shopping_cart_rejects_invalid_json(self) -> None:
         self.connection.execute(
-            "INSERT INTO customer (customer_id, name) VALUES (1, 'Casey')"
+            "INSERT INTO customer (customer_id, first_name) VALUES (1, 'Casey')"
         )
 
         with self.assertRaises(sqlite3.IntegrityError):
@@ -327,7 +327,7 @@ class DatabaseSchemaTests(unittest.TestCase):
         self.connection.executescript(
             """
             INSERT INTO admin (admin_id, name) VALUES (1, 'Morgan Admin');
-            INSERT INTO customer (customer_id, name) VALUES (2, 'Casey Customer');
+            INSERT INTO customer (customer_id, first_name) VALUES (2, 'Casey Customer');
             """
         )
         invalid_inserts = (
@@ -343,7 +343,7 @@ class DatabaseSchemaTests(unittest.TestCase):
         self.connection.executescript(
             """
             INSERT INTO admin (admin_id, name) VALUES (1, 'Morgan Admin');
-            INSERT INTO customer (customer_id, name) VALUES (2, 'Casey Customer');
+            INSERT INTO customer (customer_id, first_name) VALUES (2, 'Casey Customer');
             INSERT INTO event (event_id, admin_id, name) VALUES (3, 1, 'Community Ride');
             INSERT INTO event_registration (event_id, customer_id) VALUES (3, 2);
             """
@@ -370,7 +370,7 @@ class DatabaseSchemaTests(unittest.TestCase):
     def test_order_item_rejects_nonpositive_quantity_and_negative_price(self) -> None:
         self.connection.executescript(
             """
-            INSERT INTO customer (customer_id, name) VALUES (1, 'Casey');
+            INSERT INTO customer (customer_id, first_name) VALUES (1, 'Casey');
             INSERT INTO item (item_id, name) VALUES (1, 'Road Tube');
             INSERT INTO orders (order_id, customer_id) VALUES (1, 1);
             """

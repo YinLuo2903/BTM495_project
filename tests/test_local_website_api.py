@@ -35,7 +35,7 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
                 [(1,), (2,)],
             )
             connection.execute(
-                "INSERT INTO customer (customer_id, name) "
+                "INSERT INTO customer (customer_id, first_name) "
                 "VALUES (1, 'Test Customer')"
             )
             connection.execute(
@@ -142,7 +142,7 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
 
     def test_login_endpoint_calls_profile_login_and_returns_role(self) -> None:
         ManageProfile(self.database_path).createAccount(
-            Customer(name="Login Test", email="login@example.com"),
+            Customer(first_name="Login", last_name="Test", email="login@example.com"),
             "test-password",
         )
 
@@ -182,7 +182,7 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
 
     def test_sessions_validate_expire_and_logout_independently_for_both_roles(self) -> None:
         profile = ManageProfile(self.database_path)
-        profile.createAccount(Customer(name="Customer", email="customer@example.com"), "password1")
+        profile.createAccount(Customer(first_name="Customer", last_name="Tester", email="customer@example.com"), "password1")
         profile.createAccount(Admin(name="Admin", email="admin@example.com"), "password2")
         sessions = []
         with patch("backend.apis.session_api.time.time", return_value=1_000_000):
@@ -221,7 +221,7 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
 
     def test_login_session_database_failure_returns_error(self) -> None:
         ManageProfile(self.database_path).createAccount(
-            Customer(name="Login Test", email="login@example.com"), "test-password"
+            Customer(first_name="Login", last_name="Test", email="login@example.com"), "test-password"
         )
         with patch("backend.apis.local_website_api.SessionManager.create", side_effect=sqlite3.OperationalError("test")):
             with self._post_login({"email": "login@example.com", "password": "test-password"}) as response:
@@ -267,7 +267,7 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
     def test_local_demo_login_does_not_replace_existing_account(self) -> None:
         profile = ManageProfile(self.database_path)
         profile.createAccount(
-            Customer(name="Existing Login", email="login@example.com"),
+            Customer(first_name="Existing", last_name="Login", email="login@example.com"),
             "existing-password",
         )
 
@@ -437,6 +437,171 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
     def _json(self, method: str, path: str, payload: dict | None = None):
         with self._call(method, path, payload) as response:
             return response.status, json.load(response)
+
+    def _auth_json(
+        self, method: str, path: str, token: str, payload: dict | None = None
+    ):
+        data = None if payload is None else json.dumps(payload).encode("utf-8")
+        request = Request(
+            self.base_url + path,
+            data=data,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token}",
+            },
+            method=method,
+        )
+        try:
+            response = urlopen(request)
+        except HTTPError as error:
+            response = error
+        with response:
+            return response.status, json.load(response)
+
+    def test_signup_saves_customer_and_assigns_lpvr_code(self) -> None:
+        status, body = self._json(
+            "POST",
+            "/api/signup",
+            {
+                "first_name": " Jamie ",
+                "last_name": "Rivera",
+                "email": "jamie@example.com",
+                "phone": " 514-555-0123 ",
+                "address": "12 Rue Sherbrooke O, Montreal, QC H2X 1Y2",
+                "password": "secret-pass",
+            },
+        )
+        self.assertEqual(status, 201)
+        # The fixture already holds customer 1, so the new customer is LPVR002.
+        self.assertEqual(
+            body["customer"],
+            {
+                "customer_code": "LPVR002",
+                "first_name": "Jamie",
+                "last_name": "Rivera",
+                "email": "jamie@example.com",
+                "phone": "514-555-0123",
+                "address": "12 Rue Sherbrooke O, Montreal, QC H2X 1Y2",
+            },
+        )
+        with closing(sqlite3.connect(self.database_path)) as connection:
+            row = connection.execute(
+                "SELECT customer_code, first_name, last_name, password_hash "
+                "FROM customer WHERE email = 'jamie@example.com'"
+            ).fetchone()
+        self.assertEqual(row[:3], ("LPVR002", "Jamie", "Rivera"))
+        self.assertTrue(row[3].startswith("pbkdf2_sha256$"))
+        self.assertNotIn("secret-pass", row[3])
+
+        status, body = self._json(
+            "POST",
+            "/api/login",
+            {"email": "jamie@example.com", "password": "secret-pass"},
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(body["user"], {"name": "Jamie Rivera", "is_admin": False})
+
+    def test_signup_rejects_invalid_and_duplicate_accounts(self) -> None:
+        valid = {
+            "first_name": "Jamie",
+            "last_name": "Rivera",
+            "email": "jamie@example.com",
+            "phone": "514-555-0123",
+            "address": "12 Rue Sherbrooke O, Montreal",
+            "password": "secret-pass",
+        }
+        for field, value, message in (
+            ("phone", " ", "Phone number is required."),
+            ("address", "", "Home address is required."),
+            ("phone", "call me", "Phone number must contain 7 to 15 digits."),
+            ("phone", "123", "Phone number must contain 7 to 15 digits."),
+            ("first_name", " ", "First name is required."),
+            ("last_name", "", "Last name is required."),
+            ("email", "not-an-email", "Email must contain"),
+            ("password", "short", "Password must be at least 8 characters."),
+        ):
+            with self.subTest(field=field):
+                status, body = self._json("POST", "/api/signup", {**valid, field: value})
+                self.assertEqual(status, 400)
+                self.assertIn(message, body["message"])
+        self.assertEqual(self._count("customer"), 1)
+
+        self.assertEqual(self._json("POST", "/api/signup", valid)[0], 201)
+        status, body = self._json(
+            "POST", "/api/signup", {**valid, "first_name": "Other"}
+        )
+        self.assertEqual(status, 409)
+        self.assertEqual(body["message"], "An account with this email already exists.")
+        self.assertEqual(self._count("customer"), 2)
+
+    def test_profile_requires_customer_session_and_saves_changes(self) -> None:
+        self._json(
+            "POST",
+            "/api/signup",
+            {
+                "first_name": "Jamie",
+                "last_name": "Rivera",
+                "email": "jamie@example.com",
+                "phone": "514-555-0123",
+                "address": "12 Rue Sherbrooke O, Montreal",
+                "password": "secret-pass",
+            },
+        )
+        token = self._json(
+            "POST",
+            "/api/login",
+            {"email": "jamie@example.com", "password": "secret-pass"},
+        )[1]["token"]
+
+        status, body = self._auth_json("GET", "/api/profile", token)
+        self.assertEqual(status, 200)
+        self.assertEqual(body["customer"]["customer_code"], "LPVR002")
+        self.assertEqual(body["customer"]["first_name"], "Jamie")
+
+        status, body = self._auth_json(
+            "PATCH",
+            "/api/profile",
+            token,
+            {"first_name": "Jay", "phone": "514-555-0000", "address": "1 Rue Test"},
+        )
+        self.assertEqual(status, 200)
+        self.assertEqual(body["customer"]["first_name"], "Jay")
+        self.assertEqual(body["customer"]["last_name"], "Rivera")
+        self.assertEqual(body["customer"]["customer_code"], "LPVR002")
+        status, body = self._auth_json("GET", "/api/session", token)
+        self.assertEqual(body["user"]["name"], "Jay Rivera")
+
+        for payload, expected in (
+            ({"last_name": " "}, 400),
+            ({"email": "bad"}, 400),
+            ({"customer_code": "LPVR999"}, 400),
+            ({"phone": 5145550000}, 400),
+            ({"phone": ""}, 400),
+            ({"phone": "not a phone"}, 400),
+            ({"address": " "}, 400),
+        ):
+            with self.subTest(payload=payload):
+                status, _ = self._auth_json("PATCH", "/api/profile", token, payload)
+                self.assertEqual(status, expected)
+        status, body = self._auth_json("GET", "/api/profile", token)
+        self.assertEqual(body["customer"]["last_name"], "Rivera")
+        self.assertEqual(body["customer"]["email"], "jamie@example.com")
+
+        ManageProfile(self.database_path).createAccount(
+            Admin(name="Morgan", email="admin@example.com"), "admin-password"
+        )
+        admin_token = self._json(
+            "POST",
+            "/api/login",
+            {"email": "admin@example.com", "password": "admin-password"},
+        )[1]["token"]
+        for bearer in (admin_token, "", "x" * 43):
+            with self.subTest(bearer=bearer[:5]):
+                self.assertEqual(self._auth_json("GET", "/api/profile", bearer)[0], 401)
+                self.assertEqual(
+                    self._auth_json("PATCH", "/api/profile", bearer, {"first_name": "X"})[0],
+                    401,
+                )
 
     def test_inventory_routes_cover_every_inventory_api(self) -> None:
         status, body = self._json(

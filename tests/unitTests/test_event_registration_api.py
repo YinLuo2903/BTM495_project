@@ -19,7 +19,7 @@ class EventRegistrationAPITests(unittest.TestCase):
         initialize_database(self.database_path)
         with closing(sqlite3.connect(self.database_path)) as connection:
             connection.executemany(
-                "INSERT INTO customer (customer_id, name) VALUES (?, ?)",
+                "INSERT INTO customer (customer_id, first_name) VALUES (?, ?)",
                 [(10, "A"), (11, "B"), (12, "C")],
             )
             connection.executemany(
