@@ -28,11 +28,11 @@ describe("customer widgets", () => {
     expect(screen.getByRole("link", { name: "View all events" }).getAttribute("href")).toBe("events.html");
   });
 
-  it("renders all event registrations and the empty and error states", async () => {
+  it("renders the events page and its empty and error states", async () => {
     mockResponse({ status: "ok", events });
     const view = render(<CustomerPage page="events" />);
-    expect(await screen.findByText("Event 4")).toBeTruthy();
-    expect(screen.getAllByText("2 / 4 registered")).toHaveLength(4);
+    expect(await screen.findByRole("heading", { level: 2, name: "Event 1" })).toBeTruthy();
+    expect(screen.getAllByText("Event 4")).toHaveLength(1);
     view.unmount();
     mockResponse({ status: "ok", events: [] });
     const empty = render(<CustomerPage page="events" />);

@@ -138,6 +138,10 @@ def _events(
                     DatabaseColumns.EVENT_ID,
                     DatabaseColumns.NAME,
                     DatabaseColumns.PARTICIPANT_LIMIT,
+                    DatabaseColumns.DESCRIPTION,
+                    DatabaseColumns.LOCATION,
+                    DatabaseColumns.EVENT_DATE_TIME,
+                    DatabaseColumns.STATUS_ID,
                 ),
                 order_by=(SQLOrder(DatabaseColumns.EVENT_ID),),
             )
@@ -157,9 +161,21 @@ def _events(
                     "event_id": event_id,
                     "name": name,
                     "participant_limit": limit,
+                    "description": description,
+                    "location": location,
+                    "event_date_time": event_date_time,
+                    "status_id": status_id,
                     "customer_ids": registrations.listRegistrations(event_id).data,
                 }
-                for event_id, name, limit in events
+                for (
+                    event_id,
+                    name,
+                    limit,
+                    description,
+                    location,
+                    event_date_time,
+                    status_id,
+                ) in events
             ],
             "customers": [
                 {

@@ -663,6 +663,66 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
         self.assertEqual(self._json("DELETE", f"/api/events/{event_id}")[0], 200)
         self.assertEqual(self._json("DELETE", f"/api/events/{event_id}")[0], 404)
 
+    def test_signed_in_customer_registers_for_events(self) -> None:
+        with closing(sqlite3.connect(self.database_path)) as connection:
+            connection.execute(
+                "INSERT INTO event (event_id, name, description, location, "
+                "eventDateTime, participantLimit, statusID) "
+                "VALUES (7, 'Winter Prep', 'Get ready', 'Workshop', "
+                "'2026-11-21 13:00:00', 1, 1)"
+            )
+            connection.commit()
+        _, body = self._json("GET", "/api/events")
+        self.assertEqual(
+            {key: body["events"][0][key] for key in (
+                "description", "location", "event_date_time", "status_id"
+            )},
+            {
+                "description": "Get ready",
+                "location": "Workshop",
+                "event_date_time": "2026-11-21 13:00:00",
+                "status_id": 1,
+            },
+        )
+
+        self.assertEqual(self._auth_json("GET", "/api/my-events", "")[0], 401)
+        self._json(
+            "POST",
+            "/api/signup",
+            {
+                "first_name": "Jamie",
+                "last_name": "Rivera",
+                "email": "jamie@example.com",
+                "phone": "514-555-0123",
+                "address": "12 Rue Sherbrooke O, Montreal",
+                "password": "secret-pass",
+            },
+        )
+        token = self._json(
+            "POST",
+            "/api/login",
+            {"email": "jamie@example.com", "password": "secret-pass"},
+        )[1]["token"]
+
+        self.assertEqual(self._auth_json("GET", "/api/my-events", token), (
+            200, {"status": "ok", "event_ids": []}
+        ))
+        self.assertEqual(self._auth_json("POST", "/api/my-events/7", token)[0], 201)
+        self.assertEqual(
+            self._auth_json("GET", "/api/my-events", token)[1]["event_ids"], [7]
+        )
+        status, body = self._auth_json("POST", "/api/my-events/7", token)
+        self.assertEqual((status, body["message"]), (400, "Customer is already registered."))
+        self.assertEqual(self._auth_json("POST", "/api/my-events/99", token)[0], 404)
+        self.assertEqual(self._auth_json("POST", "/api/my-events/x", token)[0], 404)
+        self.assertEqual(self._auth_json("GET", "/api/my-events/7", token)[0], 404)
+
+        self.assertEqual(self._auth_json("DELETE", "/api/my-events/7", token)[0], 200)
+        self.assertEqual(self._auth_json("DELETE", "/api/my-events/7", token)[0], 404)
+        self.assertEqual(
+            self._auth_json("GET", "/api/my-events", token)[1]["event_ids"], []
+        )
+
     def test_edit_order_and_payment_amounts(self) -> None:
         self._add_payment()
         with self._call("PATCH", "/api/orders/101", {"amount": 10.5}) as response:

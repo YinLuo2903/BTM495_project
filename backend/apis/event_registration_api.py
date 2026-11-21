@@ -75,6 +75,16 @@ class EventRegistrationAPI:
             )
         return Response.ok("Registrations retrieved.", sorted(row[0] for row in rows))
 
+    def listCustomerEvents(self, customerID: int) -> Response:
+        """Event IDs the customer is registered for."""
+        with self.database.session(read_only=True) as session:
+            rows = session.select(
+                DatabaseTables.EVENT_REGISTRATION,
+                (DatabaseColumns.EVENT_ID,),
+                where=(SQLCondition(DatabaseColumns.CUSTOMER_ID, customerID),),
+            )
+        return Response.ok("Registrations retrieved.", sorted(row[0] for row in rows))
+
     @staticmethod
     def _findEvent(session: SQLiteSession, eventID: int) -> tuple | None:
         return session.select_one(

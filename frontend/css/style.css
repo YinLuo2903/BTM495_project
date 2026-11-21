@@ -39,5 +39,8 @@
 /* 12. Home Page Sections */
 @import url("./home-sections.css");
 
+/* 12b. Events Page (details + calendar) */
+@import url("./events.css");
+
 /* 13. Responsive Design */
 @import url("./responsive.css");

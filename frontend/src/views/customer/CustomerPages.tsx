@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { sessionApi, signIn } from "../../services/session";
 import { api, errorMessage, formatAmount, type CustomerProfile, type Item, type ShopEvent } from "../../services/api";
+import { EventsPage } from "./EventsPage";
 
 function useRemote<T>(path: string) {
   const [data, setData] = useState<T | null>(null);
@@ -257,7 +258,7 @@ export function CustomerPage({ page }: { page: string }) {
     case "profile": content = <Profile />; break;
     case "items": content = <Items />; break;
     case "item": content = <Items detail />; break;
-    case "events": content = <Card><h2>Event list</h2><p className="customer-notice">Customer registration and unregistration require a signed-in session and are not available on this page yet.</p><Events /></Card>; break;
+    case "events": content = <EventsPage />; break;
     case "cart": content = <Card><h2>Cart items</h2><p className="customer-notice">Customer carts, quantities, and totals are not available yet.</p><button disabled>Checkout</button><p><a href="checkout.html">View checkout page</a></p></Card>; break;
     case "checkout": content = <Card><h2>Review your order</h2><p className="customer-notice">Customer checkout is not available yet. The local demo supports mock credit-card payments only.</p><form><fieldset disabled><label htmlFor="payment-method">Payment method</label><select id="payment-method"><option>Credit card</option><option>Debit card</option></select><p><button>Confirm order</button></p></fieldset></form></Card>; break;
     case "orders": content = <Card><h2>Order history</h2><p className="customer-notice">Personal order history, statuses, and details require customer sessions and are not available yet.</p></Card>; break;

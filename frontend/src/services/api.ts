@@ -13,6 +13,12 @@ export interface ShopEvent {
   name: string;
   participant_limit: number;
   customer_ids: number[];
+  description?: string | null;
+  location?: string | null;
+  /** SQLite text, e.g. "2026-11-21 13:00:00"; null when no date is set. */
+  event_date_time?: string | null;
+  /** 1 Pending (open), 2 Completed, 3 Cancelled. */
+  status_id?: number | null;
 }
 
 export interface CustomerProfile {

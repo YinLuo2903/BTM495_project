@@ -8,6 +8,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from backend.apis.event_registration_api import EventRegistrationAPI
 from backend.apis.local_website_extra_api import handle_route, is_extra_route
 from backend.apis.profile_api import ManageProfile
 from backend.models.customer import Customer
@@ -277,7 +278,7 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
         if urlsplit(self.path).path in FRONTEND_PAGES and not (FRONTEND_BUILD_DIR / "index.html").is_file():
             self.send_error(503, "Frontend build missing; run npm ci and npm run build in frontend.")
             return
-        if self._extra_route("GET"):
+        if self._extra_route("GET") or self._my_events("GET"):
             return
         request_path = urlsplit(self.path).path
         if request_path == "/api/session":
@@ -295,7 +296,7 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
         super().do_GET()
 
     def do_DELETE(self) -> None:
-        if self._extra_route("DELETE"):
+        if self._extra_route("DELETE") or self._my_events("DELETE"):
             return
         resource, record_id = self._record_route()
         if resource is None:
@@ -394,7 +395,7 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
         self._send_json({"status": "ok"}, 200)
 
     def do_POST(self) -> None:
-        if self._extra_route("POST"):
+        if self._extra_route("POST") or self._my_events("POST"):
             return
         request_path = urlsplit(self.path).path
         if request_path == "/api/sample-orders":
@@ -676,6 +677,64 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
                 401,
             )
         return customer
+
+    def _my_events(self, method: str) -> bool:
+        """Serve the signed-in customer's event registrations.
+
+        GET /api/my-events lists registered event IDs; POST and DELETE
+        /api/my-events/<event_id> register and unregister. The customer comes
+        from the session token, never from the request body. Returns False when
+        the path is not one of these routes.
+        """
+        parts = urlsplit(self.path).path.strip("/").split("/")
+        if parts[:2] != ["api", "my-events"]:
+            return False
+        rest = parts[2:]
+        event_id = (
+            int(rest[0])
+            if len(rest) == 1 and rest[0].isascii() and rest[0].isdecimal()
+            else None
+        )
+        if not (
+            (method == "GET" and not rest)
+            or (method in ("POST", "DELETE") and event_id is not None)
+        ):
+            self._send_json({"status": "error", "message": "Not found."}, 404)
+            return True
+        try:
+            customer_id = SessionManager(DB_PATH).get_customer_id(self._bearer_token())
+            if customer_id is None:
+                self._send_json(
+                    {
+                        "status": "error",
+                        "message": "Sign in with a customer account to register for events.",
+                    },
+                    401,
+                )
+                return True
+            registrations = EventRegistrationAPI(DB_PATH)
+            if method == "GET":
+                result = registrations.listCustomerEvents(customer_id)
+                self._send_json({"status": "ok", "event_ids": result.data}, 200)
+                return True
+            result = (
+                registrations.register(event_id, customer_id)
+                if method == "POST"
+                else registrations.unregister(event_id, customer_id)
+            )
+        except sqlite3.Error:
+            logger.exception("Could not update event registration")
+            self._send_json({"status": "error", "message": "Database error."}, 500)
+            return True
+        if result.success:
+            self._send_json(
+                {"status": "ok", "message": result.msg},
+                201 if method == "POST" else 200,
+            )
+        else:
+            status = 404 if "not found" in result.msg.lower() else 400
+            self._send_json({"status": "error", "message": result.msg}, status)
+        return True
 
     def _get_profile(self) -> None:
         customer = self._session_customer()

@@ -110,22 +110,43 @@ export async function getSession(): Promise<Session | null> {
   return { user: result.user, expiresAt: stored.expiresAt };
 }
 
+/** A failed `sessionApi` call; `status` is null when no session is stored. */
+export class SessionApiError extends Error {
+  readonly status: number | null;
+  constructor(message: string, status: number | null) {
+    super(message);
+    this.name = "SessionApiError";
+    this.status = status;
+  }
+
+  /** True when the user must sign in (no stored session, or the server rejected it). */
+  get signedOut(): boolean {
+    return this.status === null || this.status === 401;
+  }
+}
+
 /** Call an API route as the signed-in user (sends the stored session token). */
 export async function sessionApi<T>(path: string, method = "GET", body?: unknown): Promise<T> {
   const stored = readSession();
-  if (!stored) throw new Error("Please sign in to continue.");
+  if (!stored) throw new SessionApiError("Please sign in to continue.", null);
   const response = await fetch(path, {
     method, cache: "no-store",
     headers: { Authorization: `Bearer ${stored.token}`, "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-  const data: unknown = await response.json();
+  let data: unknown;
+  try {
+    data = await response.json();
+  } catch {
+    // e.g. an HTML error page from a server that does not have this route.
+    throw new SessionApiError(`Request failed with HTTP ${response.status}.`, response.status);
+  }
   if (typeof data !== "object" || data === null || !("status" in data)) {
-    throw new Error("Invalid API response.");
+    throw new SessionApiError("Invalid API response.", response.status);
   }
   if (!response.ok || data.status !== "ok") {
     const message = "message" in data && typeof data.message === "string" ? data.message : `Request failed with HTTP ${response.status}`;
-    throw new Error(message);
+    throw new SessionApiError(message, response.status);
   }
   return data as T;
 }
