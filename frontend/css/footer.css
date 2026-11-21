@@ -2,7 +2,7 @@
 
 .site-footer {
   color: var(--ink);
-  border-top: 4px solid #f26a1b;
+  border-top: 4px solid var(--brand);
   margin-top: 48px;
   padding: 32px 20px 0;
 }
@@ -23,7 +23,7 @@
 }
 
 .site-footer h4 {
-  color: #f26a1b;
+  color: var(--brand);
   margin: 0 0 8px;
   font-size: 0.8rem;
   letter-spacing: 1px;
@@ -41,7 +41,7 @@
 }
 
 .site-footer a:hover {
-  color: #f26a1b;
+  color: var(--brand);
   text-decoration: underline;
 }
 

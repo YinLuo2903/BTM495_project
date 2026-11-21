@@ -23,7 +23,7 @@
   border: 1px solid rgb(255 255 255 / 12%);
   border-radius: 20px;
   color: var(--ink);
-  background: linear-gradient(120deg, var(--brand) 0%, #ff9a5c 100%);
+  background: var(--brand);
   box-shadow: 0 18px 42px rgb(0 0 0 / 18%);
 }
 
