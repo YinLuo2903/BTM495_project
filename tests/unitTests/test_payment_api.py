@@ -4,19 +4,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from backend.apis.payment_api import Payment, PaymentGateway
-from backend.models.payment import (
-    Payment as ModelPayment,
-    PaymentMethod,
-    PaymentStatus,
-)
+from backend.models.payment import Payment, PaymentGateway, PaymentMethod, PaymentStatus
 from backend.utils.response import ResponseLevel
 
 
 class PaymentTests(unittest.TestCase):
-    def test_payment_api_reexports_domain_model(self) -> None:
-        self.assertIs(Payment, ModelPayment)
-
     def setUp(self) -> None:
         self.payment = Payment(1, 101, 42.50, "Credit Card")
 

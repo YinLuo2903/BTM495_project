@@ -159,7 +159,6 @@ admin pages, and the local demo's primary interactions.
 - Fresh database: stop the server, then delete `database/lpvr.db` (and
   `database/uploads/` to remove uploaded images).
 - Another port: `start.bat --port 8766` or `bash start.sh --port 8766`.
-- Command-line mock payment: `python main.py`.
 
 ## Project structure
 
@@ -179,7 +178,7 @@ admin pages, and the local demo's primary interactions.
 | `database/` | `schema.sql` (tables), `sqlite_database.py` (creates and upgrades `lpvr.db`) |
 | `tests/` | Website tests; `tests/unitTests/` has the unit tests |
 | `start.bat` / `start.sh` | One-line setup and start |
-| `run_local_website.py`, `main.py` | Start the website, run the command-line payment example |
+| `run_local_website.py` | Start the website |
 
 Accounts: `createAccount` stores a PBKDF2 password hash, and `login` checks
 Admin and Customer accounts by email and password. Passwords must be at least

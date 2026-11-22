@@ -61,15 +61,6 @@ button:disabled {
   white-space: nowrap;
 }
 
-.icon-button {
-  min-width: 34px;
-  min-height: 34px;
-  padding: 5px 8px;
-  margin-right: 4px;
-  font-size: 1rem;
-  line-height: 1;
-}
-
 button:focus-visible,
 a:focus-visible {
   outline: 3px solid var(--brand-dark);

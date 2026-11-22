@@ -1,15 +1,9 @@
 /* Navigation styling */
 
-.home-nav,
-.home-nav-links,
-.home-nav-accounts,
-.home-nav-account {
+.home-nav {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-}
-
-.home-nav {
   position: fixed;
   top: 0;
   left: 0;
@@ -26,17 +20,6 @@
   width: 100%;
 }
 
-.home-nav-links,
-.home-nav-accounts {
-  gap: 24px 28px;
-  align-items: center;
-}
-
-.home-nav-account {
-  gap: 12px 14px;
-  align-items: center;
-}
-
 .home-nav a {
   color: var(--ink);
   text-decoration: none;
@@ -44,34 +27,7 @@
   font-size: 15px;
 }
 
-.home-nav-label {
-  color: var(--color-ink);
-  font-weight: 700;
-}
-
-.home-nav-unavailable {
-  color: var(--color-muted);
-  font-size: 13px;
-}
-
-.customer-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 18px;
-  margin-bottom: 24px;
-  padding: 16px 20px;
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  background: #fff;
-}
-
-.customer-nav a,
 .customer-content a {
   color: var(--ink);
   text-decoration-color: var(--brand-dark);
-}
-
-.customer-nav a[aria-current="page"] {
-  font-weight: 700;
-  text-decoration-thickness: 2px;
 }

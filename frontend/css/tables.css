@@ -29,11 +29,6 @@ th {
   white-space: nowrap;
 }
 
-:is(.items-table, .inventory-table, .orders-table, .events-table, .appointments-table) thead th {
-  color: var(--ink);
-  background: var(--brand);
-}
-
 td {
   color: var(--ink);
   font-size: 13px;
@@ -50,14 +45,4 @@ tbody tr:hover td {
 td:last-child,
 th:last-child {
   text-align: right;
-}
-
-.row-ok {
-  color: #17643a;
-  font-weight: 700;
-}
-
-.row-pending {
-  color: #7b5710;
-  font-weight: 700;
 }
