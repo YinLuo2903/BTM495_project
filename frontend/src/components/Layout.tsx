@@ -2,12 +2,15 @@ import { useEffect, useState, type ReactNode } from "react";
 import { CART_CHANGE_EVENT, fetchCart, type CartSummary } from "../services/cart";
 import { signOut, watchSession, type Session } from "../services/session";
 
+// Profile and Create account are not menu links: they live in the account area
+// (signed-in name → My Profile; guests see Sign In · Create account).
 const customerLinks = [
   ["Home", "/views/customer/index.html"], ["Items", "/views/customer/items.html"],
   ["Events", "/views/customer/events.html"], ["Appointments", "/views/customer/appointments.html"],
-  ["Shopping Cart", "/views/customer/cart.html"], ["Profile", "/views/customer/profile.html"],
-  ["Signup", "/views/customer/signup.html"],
+  ["Shopping Cart", "/views/customer/cart.html"],
 ];
+const PROFILE_URL = "/views/customer/profile.html";
+const ADMIN_HOME_URL = "/views/admin/index.html";
 const adminLinks = [
   ["Dashboard", "/views/admin/index.html"], ["Items", "/views/admin/items.html"],
   ["Inventory", "/views/admin/inventory.html"], ["Orders", "/views/admin/orders.html"],
@@ -23,7 +26,8 @@ export function Layout({ admin, children }: { admin: boolean; children: ReactNod
   useEffect(() => {
     return watchSession((value, error) => {
       setSession(value);
-      setMessage(error ? `Session unavailable: ${error.message}` : value ? `Signed in: ${value.user.name}` : "");
+      // The signed-in name is shown as the account link, so only problems go here.
+      setMessage(error ? `Session unavailable: ${error.message}` : "");
     });
   }, []);
 
@@ -70,7 +74,20 @@ export function Layout({ admin, children }: { admin: boolean; children: ReactNod
               : <a href={href}>{label}</a>}
           </li>)}
           <li><span className="nav-session-status" role="status" aria-live="polite">{message}</span></li>
-          <li>{session ? <button type="button" className="nav-logout" disabled={busy} onClick={logout}>Sign Out</button> : <a className="nav-auth nav-login" href="/views/customer/login.html">Sign In</a>}</li>
+          {session ? <>
+            <li>
+              {/* Customers go to My Profile; admins have no customer profile, so their name opens the dashboard. */}
+              <a className="nav-auth nav-account" href={session.user.is_admin ? ADMIN_HOME_URL : PROFILE_URL}
+                aria-label={session.user.is_admin ? `Admin dashboard, signed in as ${session.user.name}` : `My profile, signed in as ${session.user.name}`}>
+                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
+                <span>{session.user.name}</span>
+              </a>
+            </li>
+            <li><button type="button" className="nav-logout" disabled={busy} onClick={logout}>Sign Out</button></li>
+          </> : <>
+            <li><a className="nav-auth nav-login" href="/views/customer/login.html">Sign In</a></li>
+            {!admin && <li><a className="nav-signup" href="/views/customer/signup.html">Create account</a></li>}
+          </>}
           {admin && <li><a className="nav-back" href="/views/customer/index.html">← Customer View</a></li>}
         </ul>
       </div>

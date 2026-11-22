@@ -78,7 +78,10 @@ in the shared navigation or on the local demo page to revoke the session. Both
 forms include a password visibility toggle and display sign-in progress and
 errors.
 The customer home and admin dashboard share a navigation bar linking to the
-customer home, items, events, appointments, login, and profile pages.
+customer home, items, events, appointments, and shopping cart. Guests see
+**Sign In** and **Create account**; once signed in, the customer's name links
+to **My Profile** (an admin's name links to the admin dashboard) next to
+**Sign Out**.
 Admin signup is not yet available; customer signup, appointments, and
 cart pages are scaffolds. The local demo remains available at `/`. Admin
 inventory and event pages use the existing inventory and event APIs. Event

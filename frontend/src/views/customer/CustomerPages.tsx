@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { sessionApi, signIn } from "../../services/session";
+import { getSession, sessionApi, signIn, type Session } from "../../services/session";
 import { api, errorMessage, type CustomerProfile, type ShopEvent } from "../../services/api";
 import { AppointmentsPage } from "./AppointmentsPage";
 import { CartPage } from "./CartPage";
@@ -89,6 +89,13 @@ function Signup() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [created, setCreated] = useState<CustomerProfile | null>(null);
+  // Already signed in? Creating an account would replace that session, so say so instead.
+  const [session, setSession] = useState<Session | null>(null);
+  useEffect(() => {
+    let active = true;
+    getSession().then(value => { if (active) setSession(value); }).catch(() => undefined);
+    return () => { active = false; };
+  }, []);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
@@ -121,7 +128,13 @@ function Signup() {
   if (created) return <Card><h2>Account created</h2>
     <p role="status">Welcome, {created.first_name}! Your customer ID is <strong>{created.customer_code}</strong>.</p>
     <p><a href="profile.html">View your profile</a></p></Card>;
-  return <Card><h2>Signup</h2>
+  if (session) return <Card><h2>You're already signed in</h2>
+    <p role="status">You are signed in as <strong>{session.user.name}</strong>.</p>
+    <p>{session.user.is_admin
+      ? <a href="/views/admin/index.html">Go to the admin dashboard</a>
+      : <a href="profile.html">Go to My Profile</a>}</p>
+    <p className="muted">To create a different account, sign out first.</p></Card>;
+  return <Card><h2>Create account</h2>
     <form onSubmit={submit} aria-busy={busy || undefined}><fieldset disabled={busy}>
       <div className="form-row">
         <div><label htmlFor="signup-first-name">First name</label><input id="signup-first-name" name="first_name" autoComplete="given-name" required /></div>
@@ -206,10 +219,10 @@ function Profile() {
       setBusy(false);
     }
   }
-  if (loadError) return <Card><h2>Profile details</h2><p className="error" role="alert">{loadError}</p>
+  if (loadError) return <Card><h2>My Profile</h2><p className="error" role="alert">{loadError}</p>
     <p><a href="login.html">Sign in</a> or <a href="signup.html">create an account</a>.</p></Card>;
-  if (!profile) return <Card><h2>Profile details</h2><p role="status">Loading profile…</p></Card>;
-  return <Card><h2>Profile details</h2>
+  if (!profile) return <Card><h2>My Profile</h2><p role="status">Loading profile…</p></Card>;
+  return <Card><h2>My Profile</h2>
     <p>Customer ID: <strong>{profile.customer_code}</strong></p>
     {editing
       ? <form onSubmit={submit} aria-busy={busy || undefined} aria-label="Edit profile"><fieldset disabled={busy}>

@@ -65,6 +65,33 @@
   margin-left: auto;
 }
 
+/* Signed-in account link: person icon + name, opens My Profile. */
+.nav-menu a.nav-account {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 220px;
+}
+
+.nav-account span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Guests: "Create account" as an outlined pill beside Sign In. */
+.nav-menu a.nav-signup {
+  padding: 6px 14px;
+  border: 1.5px solid var(--brand);
+  border-radius: 999px;
+  color: var(--ink);
+}
+
+.nav-menu a.nav-signup:hover {
+  color: var(--ink);
+  background: var(--brand);
+}
+
 .nav-back {
   font-size: 12px;
 }

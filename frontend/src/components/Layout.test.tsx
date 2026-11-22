@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { announceCart, fetchCart } from "../services/cart";
 import { signOut, watchSession, type Session } from "../services/session";
 import { Layout } from "./Layout";
@@ -43,13 +43,48 @@ describe("shared layout", () => {
     vi.mocked(signOut).mockRejectedValueOnce(new Error("network unavailable"));
     render(<Layout admin={false}><main /></Layout>);
     act(() => update({ user: { name: "Pat", is_admin: false }, expiresAt: 123 }, null));
-    expect(screen.getByRole("status").textContent).toBe("Signed in: Pat");
+    expect(screen.getByRole("status").textContent).toBe(""); // the name is the account link now
     fireEvent.click(screen.getByRole("button", { name: "Sign Out" }));
     await waitFor(() => expect(screen.getByRole("status").textContent).toContain("Sign out failed: network unavailable"));
     expect(screen.getByRole("button", { name: "Sign Out" }).matches(":disabled")).toBe(false);
     act(() => update(null, new Error("session unavailable")));
     expect(screen.getByRole("status").textContent).toBe("Session unavailable: session unavailable");
     expect(screen.getByRole("link", { name: "Sign In" })).toBeTruthy();
+  });
+
+  it("shows guests Sign In and Create account, with no Profile or Signup menu links", () => {
+    vi.mocked(watchSession).mockReturnValue(() => {});
+    render(<Layout admin={false}><main /></Layout>);
+    const nav = screen.getByRole("navigation", { name: "Main navigation" });
+    expect(within(nav).getAllByRole("link").map(link => link.textContent)).toEqual([
+      "Home", "Items", "Events", "Appointments", "Shopping Cart", "Sign In", "Create account",
+    ]);
+    expect(screen.getByRole("link", { name: "Create account" }).getAttribute("href")).toBe("/views/customer/signup.html");
+    expect(screen.queryByRole("button", { name: "Sign Out" })).toBeNull();
+  });
+
+  it("turns the signed-in customer's name into the My Profile link", () => {
+    let update!: (session: Session | null, error: Error | null) => void;
+    vi.mocked(watchSession).mockImplementation(callback => { update = callback; return () => {}; });
+    render(<Layout admin={false}><main /></Layout>);
+    act(() => update({ user: { name: "Jamie Rivera", is_admin: false }, expiresAt: 123 }, null));
+
+    const account = screen.getByRole("link", { name: "My profile, signed in as Jamie Rivera" });
+    expect(account.getAttribute("href")).toBe("/views/customer/profile.html");
+    expect(account.textContent).toBe("Jamie Rivera");
+    expect(screen.getByRole("button", { name: "Sign Out" })).toBeTruthy();
+    for (const gone of ["Sign In", "Create account", "Profile", "Signup"]) {
+      expect(screen.queryByRole("link", { name: gone })).toBeNull();
+    }
+  });
+
+  it("sends a signed-in admin's name to the admin dashboard, and offers admins no Create account", () => {
+    let update!: (session: Session | null, error: Error | null) => void;
+    vi.mocked(watchSession).mockImplementation(callback => { update = callback; return () => {}; });
+    render(<Layout admin><main /></Layout>);
+    expect(screen.queryByRole("link", { name: "Create account" })).toBeNull(); // guest on an admin page
+    act(() => update({ user: { name: "Ada", is_admin: true }, expiresAt: 123 }, null));
+    expect(screen.getByRole("link", { name: "Admin dashboard, signed in as Ada" }).getAttribute("href")).toBe("/views/admin/index.html");
   });
 
   it("shows the signed-in customer's cart count and keeps it current", async () => {

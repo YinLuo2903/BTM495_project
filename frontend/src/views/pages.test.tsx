@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { sessionApi, signIn } from "../services/session";
+import { getSession, sessionApi, signIn } from "../services/session";
 import { CustomerPage } from "./customer/CustomerPages";
 import { AdminPage } from "./admin/AdminPages";
 
-vi.mock("../services/session", () => ({ signIn: vi.fn(), sessionApi: vi.fn() }));
+vi.mock("../services/session", () => ({ signIn: vi.fn(), sessionApi: vi.fn(), getSession: vi.fn(async () => null) }));
 
 afterEach(() => {
   cleanup();
@@ -45,6 +45,18 @@ describe("customer pages", () => {
     });
     expect(signIn).toHaveBeenCalledWith("jamie@example.com", "secret-pass");
     expect(screen.getByRole("link", { name: "View your profile" }).getAttribute("href")).toBe("profile.html");
+  });
+
+  it.each([
+    [false, "Go to My Profile", "profile.html"],
+    [true, "Go to the admin dashboard", "/views/admin/index.html"],
+  ])("does not offer a second account when already signed in (admin: %s)", async (isAdmin, link, href) => {
+    vi.mocked(getSession).mockResolvedValueOnce({ user: { name: "Jamie Rivera", is_admin: isAdmin }, expiresAt: 4_102_444_800 });
+    render(<CustomerPage page="signup" />);
+    expect(await screen.findByRole("heading", { name: "You're already signed in" })).toBeTruthy();
+    expect(screen.getByRole("status").textContent).toBe("You are signed in as Jamie Rivera.");
+    expect(screen.getByRole("link", { name: link }).getAttribute("href")).toBe(href);
+    expect(screen.queryByRole("button", { name: "Create account" })).toBeNull();
   });
 
   it("shows signup errors from the server", async () => {
