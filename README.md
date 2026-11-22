@@ -22,7 +22,7 @@ flowchart LR
 **Step 1. Clone the project**
 
 ```
-git clone https://github.com/Humi852/BTM495_project.git
+git clone https://github.com/YinLuo2903/BTM495_project.git
 cd BTM495_project
 ```
 
