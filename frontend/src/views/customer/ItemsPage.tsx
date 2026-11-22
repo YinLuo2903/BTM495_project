@@ -71,7 +71,7 @@ export function ItemsPage() {
         : <ul className="it-list">{shown.map(item => {
           const held = cart.inCart[item.item_id] ?? 0;
           return <li key={item.item_id} className="it-row">
-            <ItemImage />
+            <ItemImage src={item.image_path} />
             <div className="it-info">
               <h2 className="it-name"><a href={`item.html?id=${item.item_id}`}>{item.name}</a></h2>
               {item.description && <p className="it-desc">{item.description}</p>}

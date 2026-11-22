@@ -53,8 +53,18 @@ FRONTEND_PAGES = {
         "checkout", "orders", "profile", "login", "signup",
     )),
     *(f"/views/admin/{page}.html" for page in (
-        "index", "items", "inventory", "orders", "events", "appointments",
+        "index", "customers", "events", "appointments", "orders", "payments",
+        "inventory", "items",  # items.html is kept as an alias of inventory.html
     )),
+}
+# Images uploaded from the admin dashboard; served at /uploads/<name>.
+UPLOAD_DIR = Path(__file__).resolve().parents[2] / "database" / "uploads"
+MAX_UPLOAD_BYTES = 2 * 1024 * 1024
+# Content type -> (file extension, check on the first bytes so the type can't be faked).
+_IMAGE_TYPES = {
+    "image/jpeg": ("jpg", lambda head: head.startswith(b"\xff\xd8\xff")),
+    "image/png": ("png", lambda head: head.startswith(b"\x89PNG\r\n\x1a\n")),
+    "image/webp": ("webp", lambda head: head[:4] == b"RIFF" and head[8:12] == b"WEBP"),
 }
 LOCAL_DEMO_LOGIN_EMAIL = "login@example.com"
 LOCAL_DEMO_LOGIN_PASSWORD = "1234"
@@ -171,19 +181,35 @@ def get_dashboard_data() -> dict[str, object]:
                 ),
             )
         }
+        customer_names = {
+            customer_id: f"{first_name} {last_name or ''}".strip()
+            for customer_id, first_name, last_name in session.select(
+                DatabaseTables.CUSTOMER,
+                (
+                    DatabaseColumns.CUSTOMER_ID,
+                    DatabaseColumns.FIRST_NAME,
+                    DatabaseColumns.LAST_NAME,
+                ),
+            )
+        }
         orders = [
             {
                 "order_id": order_id,
                 "order_date": order_date,
                 "total_amount": total_amount,
                 "paid": order_id in paid_order_ids,
+                "customer_id": customer_id,
+                "customer_name": customer_names.get(customer_id, ""),
+                "status_id": status_id,
             }
-            for order_id, order_date, total_amount in session.select(
+            for order_id, order_date, total_amount, customer_id, status_id in session.select(
                 DatabaseTables.ORDERS,
                 (
                     DatabaseColumns.ORDER_ID,
                     DatabaseColumns.ORDER_DATE_TIME,
                     DatabaseColumns.TOTAL_AMOUNT,
+                    DatabaseColumns.CUSTOMER_ID,
+                    DatabaseColumns.STATUS_ID,
                 ),
                 order_by=(
                     SQLOrder(
@@ -193,6 +219,7 @@ def get_dashboard_data() -> dict[str, object]:
                 ),
             )
         ]
+        order_customers = {order["order_id"]: order["customer_name"] for order in orders}
         payments = [
             {
                 "payment_id": payment_id,
@@ -203,6 +230,8 @@ def get_dashboard_data() -> dict[str, object]:
                 "paid_status": (
                     payment_status_id == DatabaseValues.PAYMENT_STATUS_ID_PAID
                 ),
+                "status_id": payment_status_id,
+                "customer_name": order_customers.get(order_id, ""),
             }
             for (
                 payment_id,
@@ -241,6 +270,8 @@ def get_dashboard_data() -> dict[str, object]:
 
 class LocalTestRequestHandler(SimpleHTTPRequestHandler):
     MAX_REQUEST_BYTES = 8192
+    # mimetypes may not know .webp on every Python/OS combination.
+    extensions_map = {**SimpleHTTPRequestHandler.extensions_map, ".webp": "image/webp"}
     DEMO_CUSTOMER_EMAIL = "local-payment-demo@example.invalid"
     DEMO_ORDER_AMOUNT = 50.00
 
@@ -258,6 +289,12 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
             candidate = (FRONTEND_BUILD_DIR / request_path.lstrip("/")).resolve()
             if candidate.is_relative_to(FRONTEND_BUILD_DIR.resolve()) and candidate.is_file():
                 return str(candidate)
+        if request_path.startswith("/uploads/"):
+            # Only files inside the upload folder; anything else is a 404.
+            candidate = (UPLOAD_DIR / request_path[len("/uploads/"):]).resolve()
+            if candidate.parent == UPLOAD_DIR.resolve() and candidate.is_file():
+                return str(candidate)
+            return str(UPLOAD_DIR / "missing")
         if request_path in (
             "/local_website.css",
             "/view/local_website.css",
@@ -467,6 +504,9 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
             return
         if request_path == "/api/signup":
             self._signup()
+            return
+        if request_path == "/api/uploads":
+            self._upload_image()
             return
         if request_path != "/api/payments":
             self._send_json({"status": "error", "message": "Not found."}, 404)
@@ -1272,6 +1312,43 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
             },
             201,
         )
+
+    def _upload_image(self) -> None:
+        """Save one JPG, PNG or WebP image (raw request body, up to 2 MB).
+
+        Returns {"image_path": "/uploads/<hex>.<ext>"}, which items and events
+        store in their image_path column.
+        """
+        content_type = (self.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+        if content_type not in _IMAGE_TYPES:
+            self._send_json({"status": "error", "message": "Choose a JPG, PNG or WebP image."}, 415)
+            return
+        try:
+            length = int(self.headers.get("Content-Length", ""))
+        except ValueError:
+            self._send_json({"status": "error", "message": "Invalid Content-Length header."}, 400)
+            return
+        if length <= 0:
+            self._send_json({"status": "error", "message": "The image is empty."}, 400)
+            return
+        if length > MAX_UPLOAD_BYTES:
+            self.close_connection = True  # the unread body cannot be reused
+            self._send_json({"status": "error", "message": "Choose an image up to 2 MB."}, 413)
+            return
+        data = self.rfile.read(length)
+        extension, looks_right = _IMAGE_TYPES[content_type]
+        if len(data) != length or not looks_right(data[:16]):
+            self._send_json({"status": "error", "message": "The file is not a valid image."}, 400)
+            return
+        name = f"{os.urandom(16).hex()}.{extension}"
+        try:
+            UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+            (UPLOAD_DIR / name).write_bytes(data)
+        except OSError:
+            logger.exception("Could not save an uploaded image")
+            self._send_json({"status": "error", "message": "Could not save the image."}, 500)
+            return
+        self._send_json({"status": "ok", "image_path": f"/uploads/{name}"}, 201)
 
     def _send_database_status(self) -> None:
         try:

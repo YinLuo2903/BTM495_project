@@ -78,6 +78,7 @@ CREATE TABLE IF NOT EXISTS event (
     eventDateTime DATETIME,
     participantLimit INTEGER NOT NULL DEFAULT 0 CHECK (participantLimit >= 0),
     statusID INTEGER,
+    image_path TEXT,  -- optional picture uploaded by an admin, e.g. /uploads/<hex>.jpg
     FOREIGN KEY (admin_id) REFERENCES admin(admin_id),
     FOREIGN KEY (statusID) REFERENCES status(statusID)
 );
@@ -120,7 +121,8 @@ CREATE TABLE IF NOT EXISTS item (
     description TEXT,
     price REAL,
     category TEXT,
-    brand TEXT
+    brand TEXT,
+    image_path TEXT  -- optional picture uploaded by an admin, e.g. /uploads/<hex>.jpg
 );
 
 -- Current stock per item. An item without a row here is not stock-tracked (e.g. a service).

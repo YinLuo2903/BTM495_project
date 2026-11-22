@@ -108,7 +108,9 @@ export function CartToast({ toast }: { toast: Toast | null }) {
   </div>;
 }
 
-export function ItemImage({ size = 32 }: { size?: number }) {
+/** The item's uploaded picture, or a placeholder icon when it has none. Decorative: the name is next to it. */
+export function ItemImage({ size = 32, src }: { size?: number; src?: string | null }) {
+  if (src) return <span className="it-thumb"><img className="it-thumb-img" src={src} alt="" /></span>;
   return <span className="it-thumb" aria-hidden="true">
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21" /></svg>
   </span>;

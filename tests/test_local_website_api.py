@@ -1,3 +1,4 @@
+import http.client
 import json
 import hashlib
 import logging
@@ -354,6 +355,9 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
                     "order_date": None,
                     "total_amount": 42.5,
                     "paid": False,
+                    "customer_id": 1,
+                    "customer_name": "Test Customer",
+                    "status_id": None,
                 }
             ],
         )
@@ -398,6 +402,8 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
                     "amount": 42.5,
                     "payment_method": "Credit Card",
                     "paid_status": True,
+                    "status_id": 2,
+                    "customer_name": "Test Customer",
                 }
             ],
         )
@@ -451,6 +457,57 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
             ).fetchone()[0]
         self.assertEqual(sample_user_count, 1)
         self.assertEqual(sample_order_count, 1)
+
+    def _upload(self, data: bytes, content_type: str):
+        request = Request(
+            self.base_url + "/api/uploads", data=data,
+            headers={"Content-Type": content_type}, method="POST",
+        )
+        try:
+            response = urlopen(request)
+        except HTTPError as error:
+            response = error
+        with response:
+            return response.status, json.load(response)
+
+    def test_uploads_an_image_and_serves_it(self) -> None:
+        png = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
+        with TemporaryDirectory() as folder, patch(
+            "backend.apis.local_website_api.UPLOAD_DIR", Path(folder)
+        ):
+            status, body = self._upload(png, "image/png")
+            self.assertEqual(status, 201)
+            self.assertRegex(body["image_path"], r"^/uploads/[0-9a-f]{32}\.png$")
+            with urlopen(self.base_url + body["image_path"]) as response:
+                self.assertEqual(response.headers["Content-Type"], "image/png")
+                self.assertEqual(response.read(), png)
+            for missing in ("/uploads/nothing.png", "/uploads/..%2F..%2Fschema.sql"):
+                with self.subTest(path=missing), self.assertRaises(HTTPError) as error:
+                    urlopen(self.base_url + missing)
+                self.assertEqual(error.exception.code, 404)
+
+    def test_rejects_uploads_that_are_not_small_images(self) -> None:
+        with TemporaryDirectory() as folder, patch(
+            "backend.apis.local_website_api.UPLOAD_DIR", Path(folder)
+        ):
+            self.assertEqual(
+                self._upload(b"GIF89a....", "image/gif"),
+                (415, {"status": "error", "message": "Choose a JPG, PNG or WebP image."}),
+            )
+            self.assertEqual(
+                self._upload(b"<svg onload=alert(1)>", "image/png"),
+                (400, {"status": "error", "message": "The file is not a valid image."}),
+            )
+            # Too large: refused from the header alone, before the body is read.
+            connection = http.client.HTTPConnection("127.0.0.1", self.server.server_address[1], timeout=5)
+            connection.putrequest("POST", "/api/uploads")
+            connection.putheader("Content-Type", "image/jpeg")
+            connection.putheader("Content-Length", str(3 * 1024 * 1024))
+            connection.endheaders()
+            response = connection.getresponse()
+            self.assertEqual((response.status, json.load(response)["message"]), (413, "Choose an image up to 2 MB."))
+            connection.close()
+            self.assertEqual(list(Path(folder).iterdir()), [])
 
     def _call(self, method: str, path: str, payload: dict | None = None):
         data = None if payload is None else json.dumps(payload).encode("utf-8")

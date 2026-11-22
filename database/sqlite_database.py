@@ -38,6 +38,7 @@ def initialize_database(database_path: str | Path = DB_PATH) -> None:
             Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
         )
     with database.transaction() as connection:
+        _add_image_columns(connection)
         _restore_legacy_status_rows(connection)
         _migrate_item_stock(connection)
 
@@ -156,6 +157,20 @@ def _has_foreign_keys(session: SQLiteSession, table: str) -> bool:
     return bool(session.fetch_all(f"PRAGMA foreign_key_list({quote_identifier(table)})"))
 
 
+def _column_names(session: SQLiteSession, table: str) -> list[str]:
+    return [row[1] for row in session.fetch_all(f"PRAGMA table_info({quote_identifier(table)})")]
+
+
+def _add_image_columns(session: SQLiteSession) -> None:
+    """Give databases created before image uploads the optional image_path column."""
+    for table in (DatabaseTables.ITEM, DatabaseTables.EVENT):
+        if DatabaseColumns.IMAGE_PATH not in _column_names(session, table):
+            session.execute(
+                f"ALTER TABLE {quote_identifier(table)} "
+                f"ADD COLUMN {quote_identifier(DatabaseColumns.IMAGE_PATH)} TEXT"
+            )
+
+
 def _restore_legacy_status_rows(session: SQLiteSession) -> None:
     """Copy rows from parked tables into the new ones, mapping old status IDs."""
     parked = _table_names(session)
@@ -163,7 +178,9 @@ def _restore_legacy_status_rows(session: SQLiteSession) -> None:
         legacy_table = table + _LEGACY_SUFFIX
         if legacy_table not in parked:
             continue
-        columns = DATABASE_SCHEMA_COLUMNS[table]
+        # Parked tables predate later columns (such as image_path); copy what they have.
+        legacy_columns = set(_column_names(session, legacy_table))
+        columns = tuple(c for c in DATABASE_SCHEMA_COLUMNS[table] if c in legacy_columns)
         for row in session.select(legacy_table, columns):
             values = dict(zip(columns, row))
             status_id = values[DatabaseColumns.STATUS_ID]

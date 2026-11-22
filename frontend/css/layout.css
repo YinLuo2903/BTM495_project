@@ -92,12 +92,3 @@
   background: var(--brand);
 }
 
-.nav-back {
-  font-size: 12px;
-}
-
-/* Admin-specific navigation */
-.admin-nav .nav-title {
-  font-size: 15px; /* SYNCED: Same as customer nav */
-  opacity: 1; /* Full opacity for admin */
-}

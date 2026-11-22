@@ -11,13 +11,9 @@ const customerLinks = [
 ];
 const PROFILE_URL = "/views/customer/profile.html";
 const ADMIN_HOME_URL = "/views/admin/index.html";
-const adminLinks = [
-  ["Dashboard", "/views/admin/index.html"], ["Items", "/views/admin/items.html"],
-  ["Inventory", "/views/admin/inventory.html"], ["Orders", "/views/admin/orders.html"],
-  ["Events", "/views/admin/events.html"], ["Appointments", "/views/admin/appointments.html"],
-];
 
-export function Layout({ admin, children }: { admin: boolean; children: ReactNode }) {
+/** Customer pages' navigation and footer (admin pages use their own sidebar). */
+export function Layout({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -34,7 +30,7 @@ export function Layout({ admin, children }: { admin: boolean; children: ReactNod
   // Cart count badge: only customers have a cart.
   const isCustomer = Boolean(session && !session.user.is_admin);
   useEffect(() => {
-    if (admin || !isCustomer) {
+    if (!isCustomer) {
       setCartCount(0);
       return;
     }
@@ -46,7 +42,7 @@ export function Layout({ admin, children }: { admin: boolean; children: ReactNod
       active = false;
       window.removeEventListener(CART_CHANGE_EVENT, onChange);
     };
-  }, [admin, isCustomer]);
+  }, [isCustomer]);
 
   async function logout() {
     setBusy(true);
@@ -60,14 +56,14 @@ export function Layout({ admin, children }: { admin: boolean; children: ReactNod
   }
 
   return <>
-    <nav className={`home-nav${admin ? " admin-nav" : ""}`} aria-label="Main navigation">
+    <nav className="home-nav" aria-label="Main navigation">
       <div className="nav-container">
         <div className="nav-brand">
           <img src="/assets/images/logo.png" alt="Logo" className="nav-logo" loading="lazy" />
-          <span className="nav-title">LE PETIT VÉLO ROUGE{admin ? " - ADMIN" : ""}</span>
+          <span className="nav-title">LE PETIT VÉLO ROUGE</span>
         </div>
         <ul className="nav-menu">
-          {(admin ? adminLinks : customerLinks).map(([label, href]) => <li key={href}>
+          {customerLinks.map(([label, href]) => <li key={href}>
             {href.endsWith("/cart.html") && cartCount > 0
               ? <a href={href} className="nav-cart-link" aria-label={`${label}, ${cartCount} ${cartCount === 1 ? "item" : "items"}`}>
                 {label}<span className="nav-cart-count" aria-hidden="true">{cartCount}</span></a>
@@ -86,9 +82,8 @@ export function Layout({ admin, children }: { admin: boolean; children: ReactNod
             <li><button type="button" className="nav-logout" disabled={busy} onClick={logout}>Sign Out</button></li>
           </> : <>
             <li><a className="nav-auth nav-login" href="/views/customer/login.html">Sign In</a></li>
-            {!admin && <li><a className="nav-signup" href="/views/customer/signup.html">Create account</a></li>}
+            <li><a className="nav-signup" href="/views/customer/signup.html">Create account</a></li>
           </>}
-          {admin && <li><a className="nav-back" href="/views/customer/index.html">← Customer View</a></li>}
         </ul>
       </div>
     </nav>

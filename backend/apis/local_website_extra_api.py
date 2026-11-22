@@ -7,11 +7,13 @@ EventRegistrationAPI, so the GUI exercises the same code the app uses.
 import sqlite3
 from pathlib import Path
 
+from backend.apis.admin_api import handle_admin_route
 from backend.apis.event_registration_api import EventRegistrationAPI
 from backend.apis.inventory_list_api import InventoryList, Item
 from backend.utils.constants import DatabaseColumns, DatabaseTables, StatusID
 from backend.utils.response import Response
 from backend.utils.sqlite import SQLCondition, SQLiteQuery, SQLOrder
+from backend.utils.validators import is_valid_datetime_text, is_valid_image_path
 
 # JSON key -> InventoryList keyword.
 _ITEM_KEYS = {
@@ -23,7 +25,20 @@ _ITEM_KEYS = {
     "stock_quantity": "stockQuantity",
     "admin_id": "adminId",
     "reason": "reason",
+    "image_path": "imagePath",
 }
+
+# Event JSON key -> event table column. Only name and participant_limit are required.
+_EVENT_FIELDS = {
+    "name": DatabaseColumns.NAME,
+    "description": DatabaseColumns.DESCRIPTION,
+    "location": DatabaseColumns.LOCATION,
+    "event_date_time": DatabaseColumns.EVENT_DATE_TIME,
+    "participant_limit": DatabaseColumns.PARTICIPANT_LIMIT,
+    "status_id": DatabaseColumns.STATUS_ID,
+    "image_path": DatabaseColumns.IMAGE_PATH,
+}
+_STATUS_IDS = {int(status) for status in StatusID}
 
 RouteResult = tuple[int, dict[str, object]]
 
@@ -34,7 +49,7 @@ def _parts(path: str) -> list[str]:
 
 
 def is_extra_route(path: str) -> bool:
-    return _parts(path)[:1] in (["inventory"], ["events"], ["event-registrations"])
+    return _parts(path)[:1] in (["inventory"], ["events"], ["event-registrations"], ["admin"])
 
 
 def handle_route(
@@ -47,6 +62,8 @@ def handle_route(
             return _inventory(InventoryList(database_path), method, parts[1:], payload)
         if parts[0] == "events":
             return _events(database_path, method, parts[1:], payload)
+        if parts[0] == "admin":
+            return handle_admin_route(database_path, method, parts[1:], payload)
         return _registrations(
             EventRegistrationAPI(database_path), method, parts[1:], payload
         )
@@ -83,6 +100,7 @@ def _item_json(item: Item) -> dict[str, object]:
         "category": item.category,
         "brand": item.brand,
         "stock_quantity": item.stockQuantity,
+        "image_path": item.imagePath,
     }
 
 
@@ -101,6 +119,7 @@ def _inventory(
         unknown = sorted(set(payload) - set(_ITEM_KEYS) - {"item_id"})
         if unknown:
             return _error(400, f"Unknown field: {', '.join(unknown)}.")
+        # Without item_id the next free ID is assigned.
         part = Item(
             payload.get("item_id"),
             payload.get("name"),
@@ -109,6 +128,7 @@ def _inventory(
             payload.get("category", ""),
             payload.get("brand", ""),
             payload.get("stock_quantity"),
+            payload.get("image_path"),
         )
         return _result(
             inventory.addItem(part, payload.get("admin_id"), payload.get("reason")),
@@ -142,6 +162,7 @@ def _events(
                     DatabaseColumns.LOCATION,
                     DatabaseColumns.EVENT_DATE_TIME,
                     DatabaseColumns.STATUS_ID,
+                    DatabaseColumns.IMAGE_PATH,
                 ),
                 order_by=(SQLOrder(DatabaseColumns.EVENT_ID),),
             )
@@ -165,6 +186,7 @@ def _events(
                     "location": location,
                     "event_date_time": event_date_time,
                     "status_id": status_id,
+                    "image_path": image_path,
                     "customer_ids": registrations.listRegistrations(event_id).data,
                 }
                 for (
@@ -175,6 +197,7 @@ def _events(
                     location,
                     event_date_time,
                     status_id,
+                    image_path,
                 ) in events
             ],
             "customers": [
@@ -186,21 +209,40 @@ def _events(
             ],
         }
     if method == "POST" and not rest:
-        name, limit = payload.get("name"), payload.get("participant_limit")
-        if not isinstance(name, str) or not name.strip():
-            return _error(400, "Event name is required.")
-        if type(limit) is not int or limit < 0:
-            return _error(400, "Participant limit must be a whole number.")
+        for required in ("name", "participant_limit"):
+            payload.setdefault(required, None)
+        values, message = _event_values(payload)
+        if values is None:
+            return _error(400, message)
+        values.setdefault(DatabaseColumns.STATUS_ID, int(StatusID.PENDING))
         with database.transaction() as session:
-            result = session.insert(
-                DatabaseTables.EVENT,
-                {
-                    DatabaseColumns.NAME: name.strip(),
-                    DatabaseColumns.PARTICIPANT_LIMIT: limit,
-                    DatabaseColumns.STATUS_ID: StatusID.PENDING,
-                },
-            )
+            result = session.insert(DatabaseTables.EVENT, values)
         return 201, {"status": "ok", "event_id": result.lastrowid}
+    if method == "PATCH" and len(rest) == 1 and _id(rest[0]) is not None:
+        event_id = _id(rest[0])
+        values, message = _event_values(payload)
+        if values is None:
+            return _error(400, message)
+        if not values:
+            return _error(400, "No changes to save.")
+        where = (SQLCondition(DatabaseColumns.EVENT_ID, event_id),)
+        with database.transaction(immediate=True) as session:
+            if session.select_one(DatabaseTables.EVENT, (DatabaseColumns.EVENT_ID,), where=where) is None:
+                return _error(404, "Event not found.")
+            limit = values.get(DatabaseColumns.PARTICIPANT_LIMIT)
+            if limit is not None:
+                registered = len(
+                    session.select(
+                        DatabaseTables.EVENT_REGISTRATION, (DatabaseColumns.CUSTOMER_ID,), where=where
+                    )
+                )
+                if limit < registered:
+                    return _error(
+                        400,
+                        f"The limit can't be lower than the {registered} people already registered.",
+                    )
+            session.update(DatabaseTables.EVENT, values, where=where)
+        return 200, {"status": "ok", "event_id": event_id}
     if method == "DELETE" and len(rest) == 1 and _id(rest[0]) is not None:
         with database.transaction() as session:
             result = session.delete(
@@ -211,6 +253,36 @@ def _events(
             return _error(404, "Event not found.")
         return 200, {"status": "ok"}
     return _error(404, "Not found.")
+
+
+def _event_values(payload: dict) -> tuple[dict[str, object] | None, str]:
+    """Validate event JSON fields into column values; (None, message) when invalid."""
+    unknown = sorted(set(payload) - set(_EVENT_FIELDS))
+    if unknown:
+        return None, f"Unknown field: {', '.join(unknown)}."
+    values: dict[str, object] = {}
+    for key, value in payload.items():
+        if key == "name":
+            if not isinstance(value, str) or not value.strip():
+                return None, "Event name is required."
+            value = value.strip()
+        elif key in ("description", "location"):
+            if value is not None and not isinstance(value, str):
+                return None, f"Event {key} must be text."
+            value = (value or "").strip() or None
+        elif key == "event_date_time":
+            if value is not None and not is_valid_datetime_text(value):
+                return None, "Event date must look like 2026-11-27 09:00:00."
+        elif key == "participant_limit":
+            if type(value) is not int or value < 0:
+                return None, "Participant limit must be a whole number."
+        elif key == "status_id":
+            if type(value) is not int or value not in _STATUS_IDS:
+                return None, "Status must be 1 (Pending), 2 (Completed) or 3 (Cancelled)."
+        elif key == "image_path" and not is_valid_image_path(value):
+            return None, "Upload the image before saving the event."
+        values[_EVENT_FIELDS[key]] = value
+    return values, ""
 
 
 def _registrations(

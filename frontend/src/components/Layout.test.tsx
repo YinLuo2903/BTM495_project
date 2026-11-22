@@ -20,19 +20,15 @@ afterEach(() => {
 });
 
 describe("shared layout", () => {
-  it.each([
-    [false, "Home", "/views/customer/index.html"],
-    [true, "Dashboard", "/views/admin/index.html"],
-  ])("renders role-specific navigation and footer (admin: %s)", (admin, label, href) => {
+  it("renders the customer navigation and footer", () => {
     const unsubscribe = vi.fn();
     vi.mocked(watchSession).mockReturnValue(unsubscribe);
-    const view = render(<Layout admin={admin}><main>Page content</main></Layout>);
+    const view = render(<Layout><main>Page content</main></Layout>);
     expect(screen.getByRole("navigation", { name: "Main navigation" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: label }).getAttribute("href")).toBe(href);
+    expect(screen.getByRole("link", { name: "Home" }).getAttribute("href")).toBe("/views/customer/index.html");
     expect(screen.getByRole("link", { name: "Sign In" }).getAttribute("href")).toBe("/views/customer/login.html");
     expect(screen.getByText("Page content")).toBeTruthy();
     expect(screen.getByRole("contentinfo")).toBeTruthy();
-    if (admin) expect(screen.getByRole("link", { name: "← Customer View" })).toBeTruthy();
     view.unmount();
     expect(unsubscribe).toHaveBeenCalledOnce();
   });
@@ -41,7 +37,7 @@ describe("shared layout", () => {
     let update!: (session: Session | null, error: Error | null) => void;
     vi.mocked(watchSession).mockImplementation(callback => { update = callback; return () => {}; });
     vi.mocked(signOut).mockRejectedValueOnce(new Error("network unavailable"));
-    render(<Layout admin={false}><main /></Layout>);
+    render(<Layout><main /></Layout>);
     act(() => update({ user: { name: "Pat", is_admin: false }, expiresAt: 123 }, null));
     expect(screen.getByRole("status").textContent).toBe(""); // the name is the account link now
     fireEvent.click(screen.getByRole("button", { name: "Sign Out" }));
@@ -54,7 +50,7 @@ describe("shared layout", () => {
 
   it("shows guests Sign In and Create account, with no Profile or Signup menu links", () => {
     vi.mocked(watchSession).mockReturnValue(() => {});
-    render(<Layout admin={false}><main /></Layout>);
+    render(<Layout><main /></Layout>);
     const nav = screen.getByRole("navigation", { name: "Main navigation" });
     expect(within(nav).getAllByRole("link").map(link => link.textContent)).toEqual([
       "Home", "Items", "Events", "Appointments", "Shopping Cart", "Sign In", "Create account",
@@ -66,7 +62,7 @@ describe("shared layout", () => {
   it("turns the signed-in customer's name into the My Profile link", () => {
     let update!: (session: Session | null, error: Error | null) => void;
     vi.mocked(watchSession).mockImplementation(callback => { update = callback; return () => {}; });
-    render(<Layout admin={false}><main /></Layout>);
+    render(<Layout><main /></Layout>);
     act(() => update({ user: { name: "Jamie Rivera", is_admin: false }, expiresAt: 123 }, null));
 
     const account = screen.getByRole("link", { name: "My profile, signed in as Jamie Rivera" });
@@ -78,11 +74,10 @@ describe("shared layout", () => {
     }
   });
 
-  it("sends a signed-in admin's name to the admin dashboard, and offers admins no Create account", () => {
+  it("sends a signed-in admin's name to the admin dashboard", () => {
     let update!: (session: Session | null, error: Error | null) => void;
     vi.mocked(watchSession).mockImplementation(callback => { update = callback; return () => {}; });
-    render(<Layout admin><main /></Layout>);
-    expect(screen.queryByRole("link", { name: "Create account" })).toBeNull(); // guest on an admin page
+    render(<Layout><main /></Layout>);
     act(() => update({ user: { name: "Ada", is_admin: true }, expiresAt: 123 }, null));
     expect(screen.getByRole("link", { name: "Admin dashboard, signed in as Ada" }).getAttribute("href")).toBe("/views/admin/index.html");
   });
@@ -91,7 +86,7 @@ describe("shared layout", () => {
     let update!: (session: Session | null, error: Error | null) => void;
     vi.mocked(watchSession).mockImplementation(callback => { update = callback; return () => {}; });
     vi.mocked(fetchCart).mockResolvedValue({ items: [line(1, 2)], count: 2, total: 20 });
-    render(<Layout admin={false}><main /></Layout>);
+    render(<Layout><main /></Layout>);
     expect(screen.getByRole("link", { name: "Shopping Cart" })).toBeTruthy(); // guest: no badge
     expect(fetchCart).not.toHaveBeenCalled();
 
@@ -107,7 +102,7 @@ describe("shared layout", () => {
   it("does not load a cart for admins", () => {
     let update!: (session: Session | null, error: Error | null) => void;
     vi.mocked(watchSession).mockImplementation(callback => { update = callback; return () => {}; });
-    render(<Layout admin={false}><main /></Layout>);
+    render(<Layout><main /></Layout>);
     act(() => update({ user: { name: "Ada", is_admin: true }, expiresAt: 123 }, null));
     expect(fetchCart).not.toHaveBeenCalled();
   });
@@ -117,7 +112,7 @@ describe("shared layout", () => {
     let finish!: () => void;
     vi.mocked(watchSession).mockImplementation(callback => { update = callback; return () => {}; });
     vi.mocked(signOut).mockImplementation(() => new Promise(resolve => { finish = resolve; }));
-    render(<Layout admin={false}><main /></Layout>);
+    render(<Layout><main /></Layout>);
     act(() => update({ user: { name: "Pat", is_admin: false }, expiresAt: 123 }, null));
     const button = screen.getByRole("button", { name: "Sign Out" });
     fireEvent.click(button);

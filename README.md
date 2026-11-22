@@ -78,16 +78,38 @@ customers to the home page and admins to the admin dashboard; use **Sign Out**
 in the shared navigation or on the local demo page to revoke the session. Both
 forms include a password visibility toggle and display sign-in progress and
 errors.
-The customer home and admin dashboard share a navigation bar linking to the
+Customer pages share a navigation bar linking to the
 customer home, items, events, appointments, and shopping cart. Guests see
 **Sign In** and **Create account**; once signed in, the customer's name links
 to **My Profile** (an admin's name links to the admin dashboard) next to
 **Sign Out**.
-Admin signup is not yet available; customer signup, appointments, and
-cart pages are scaffolds. The local demo remains available at `/`. Admin
-inventory and event pages use the existing inventory and event APIs. Event
-editing, event dates and locations, appointment management, and order status
-updates are not supported by those APIs and are identified as unavailable.
+Admin signup is not yet available. The local demo remains available at `/`.
+
+### Admin dashboard
+
+Signing in as `admin@lpvr.com` opens `/views/admin/index.html`. Admin pages
+have their own left sidebar: **Dashboard, Customers, Events, Appointments,
+Orders, Payments, Inventory**.
+
+- **Dashboard:** customer count, plus this month's paid revenue, pending
+  orders and upcoming events, and a weekly table of events and appointments
+  (click one to open it).
+- **Every section** has search, status (or stock) filters, sortable columns,
+  15 rows per page and a right-side details panel.
+- **Events, Appointments, Inventory:** Add New, edit and delete. Events and
+  items can have an image (JPG, PNG or WebP, up to 2 MB); it shows on the
+  customer Events, Items and item pages.
+- **Customers, Orders, Payments:** view and delete only; they come from
+  sign-up and checkout. A customer who still has orders or appointments is
+  kept for the shop's records.
+
+Routes used: `/api/events` (GET, POST, PATCH, DELETE), `/api/inventory`,
+`/api/dashboard` (orders and payments), `/api/orders/<id>` and
+`/api/payments/<id>` (DELETE), `/api/admin/customers` (GET, DELETE),
+`/api/admin/appointments` (GET, POST, PATCH, DELETE) and `/api/uploads`
+(POST an image; files are saved in `database/uploads/` and served at
+`/uploads/`). Like the rest of this local demo, these routes are not
+protected by a session check.
 
 ### Frontend development
 
@@ -133,7 +155,8 @@ admin pages, and the local demo's primary interactions.
 
 ## Optional config
 
-- Fresh database: stop the server, then delete `database/lpvr.db`.
+- Fresh database: stop the server, then delete `database/lpvr.db` (and
+  `database/uploads/` to remove uploaded images).
 - Another port: `start.bat --port 8766` or `bash start.sh --port 8766`.
 - Command-line mock payment: `python main.py`.
 

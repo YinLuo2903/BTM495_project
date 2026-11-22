@@ -14,4 +14,5 @@ document.title = demo ? "LPVR Local Dry-Run Website" : `${admin ? "Admin" : "Cus
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing application root.");
-createRoot(root).render(demo ? <DemoPage /> : <Layout admin={admin}>{admin ? <AdminPage page={page} /> : <CustomerPage page={page} />}</Layout>);
+// Admin pages bring their own sidebar; customer pages share the top navigation and footer.
+createRoot(root).render(demo ? <DemoPage /> : admin ? <AdminPage page={page} /> : <Layout><CustomerPage page={page} /></Layout>);

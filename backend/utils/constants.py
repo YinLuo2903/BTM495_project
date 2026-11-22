@@ -61,6 +61,7 @@ class DatabaseColumns:
     PAYMENT_STATUS_ID = "statusID"
     AMOUNT = "amount"
     UPDATED_AT = "updated_at"
+    IMAGE_PATH = "image_path"  # optional uploaded picture, e.g. /uploads/<hex>.jpg
 
 
 class StatusID(IntEnum):
@@ -110,6 +111,7 @@ DATABASE_SCHEMA_COLUMNS = {
         DatabaseColumns.EVENT_DATE_TIME,
         DatabaseColumns.PARTICIPANT_LIMIT,
         DatabaseColumns.STATUS_ID,
+        DatabaseColumns.IMAGE_PATH,
     ),
     DatabaseTables.EVENT_REGISTRATION: (
         DatabaseColumns.EVENT_ID,
@@ -136,6 +138,7 @@ DATABASE_SCHEMA_COLUMNS = {
         DatabaseColumns.PRICE,
         DatabaseColumns.CATEGORY,
         DatabaseColumns.BRAND,
+        DatabaseColumns.IMAGE_PATH,
     ),
     DatabaseTables.INVENTORY: (
         DatabaseColumns.ITEM_ID,

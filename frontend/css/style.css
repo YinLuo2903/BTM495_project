@@ -48,5 +48,8 @@
 /* 12d. Items List Page (search, list rows, pagination, cart feedback; builds on events.css) */
 @import url("./items.css");
 
+/* 12e. Admin Dashboard (sidebar, management tables, details panel) */
+@import url("./admin.css");
+
 /* 13. Responsive Design */
 @import url("./responsive.css");

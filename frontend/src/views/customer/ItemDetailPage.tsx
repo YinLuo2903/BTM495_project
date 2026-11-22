@@ -35,7 +35,7 @@ export function ItemDetailPage() {
       <p role={loadError ? "alert" : "status"} className={loadError ? "ev-alert" : undefined}>{notice}</p>
     </section>
     : item && <article className="ev-card it-detail">
-      <ItemImage size={64} />
+      <ItemImage size={64} src={item.image_path} />
       <div className="it-detail-body">
         {item.category && <p className="it-detail-category">{item.category}</p>}
         <h1>{item.name}</h1>

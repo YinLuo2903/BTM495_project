@@ -116,6 +116,12 @@
   background: var(--background);
 }
 
+.it-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .it-info {
   display: grid;
   flex: 1;

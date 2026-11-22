@@ -6,6 +6,8 @@ export interface Item {
   category: string;
   brand: string;
   stock_quantity: number | null;
+  /** Uploaded picture ("/uploads/<hex>.jpg"); null or missing shows a placeholder. */
+  image_path?: string | null;
 }
 
 export interface ShopEvent {
@@ -19,6 +21,8 @@ export interface ShopEvent {
   event_date_time?: string | null;
   /** 1 Pending (open), 2 Completed, 3 Cancelled. */
   status_id?: number | null;
+  /** Uploaded picture ("/uploads/<hex>.jpg"); null or missing shows a placeholder. */
+  image_path?: string | null;
 }
 
 export interface CustomerProfile {

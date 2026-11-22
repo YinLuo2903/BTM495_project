@@ -227,11 +227,12 @@ function EventDetails({ event, today, registered, busy, justRegistered, needsSig
   const [statusLabel, statusClass] = statusOf(event, today, registered, full);
   const date = event.date;
   return <>
-    <div className="ev-photo" role="img" aria-label="Event photo placeholder">
-      <svg aria-hidden="true" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="10" r="2" /><path d="M21 16l-5-5-9 9" /></svg>
-      <span className="ev-photo-title">Event photo</span>
-      <span>16:9 · to be added</span>
-    </div>
+    {event.image_path ? <img className="ev-photo ev-photo-img" src={event.image_path} alt={`Photo of ${event.name}`} />
+      : <div className="ev-photo" role="img" aria-label="Event photo placeholder">
+        <svg aria-hidden="true" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="10" r="2" /><path d="M21 16l-5-5-9 9" /></svg>
+        <span className="ev-photo-title">Event photo</span>
+        <span>16:9 · to be added</span>
+      </div>}
 
     <div className="ev-summary">
       <div className="ev-date-badge" aria-hidden="true">

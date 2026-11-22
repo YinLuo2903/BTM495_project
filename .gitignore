@@ -3,8 +3,9 @@ __pycache__/
 *.pyc
 .venv/
 
-# Local databases and logs
+# Local databases, uploaded images and logs
 *.db
+database/uploads/
 *.log
 
 # Frontend dependencies and build output

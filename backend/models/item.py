@@ -8,6 +8,7 @@ class Item:
         category: str = "",
         brand: str = "",
         stockQuantity: int | None = None,
+        imagePath: str | None = None,
     ) -> None:
         self.itemId = itemId
         self.name = name
@@ -17,6 +18,8 @@ class Item:
         self.brand = brand
         # None means stock is not tracked (for example, a service).
         self.stockQuantity = stockQuantity
+        # Optional uploaded picture, e.g. "/uploads/<hex>.jpg"; None shows a placeholder.
+        self.imagePath = imagePath
 
     def getPrice(self) -> float:
         return self.price

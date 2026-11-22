@@ -6,6 +6,7 @@ from backend.models.item import Item
 from backend.utils.constants import DatabaseColumns, DatabaseTables
 from backend.utils.response import Response
 from backend.utils.sqlite import SQLCondition, SQLiteQuery, SQLiteSession, SQLOrder
+from backend.utils.validators import is_valid_image_path
 from database.sqlite_database import DB_PATH
 
 __all__ = ["InventoryList", "Item"]
@@ -26,6 +27,7 @@ _ITEM_FIELDS = {
     "price": (DatabaseColumns.PRICE, _is_number),
     "category": (DatabaseColumns.CATEGORY, _is_text),
     "brand": (DatabaseColumns.BRAND, _is_text),
+    "imagePath": (DatabaseColumns.IMAGE_PATH, is_valid_image_path),
 }
 # Stock lives in the inventory table; None means the item is not stock-tracked.
 _STOCK_FIELD = "stockQuantity"
@@ -99,17 +101,23 @@ class InventoryList:
     def addItem(
         self, part: Item, adminId: int | None = None, reason: str | None = None
     ) -> Response:
+        """Add an item; when part.itemId is None the next free ID is assigned."""
         values = {name: getattr(part, name) for name in _ITEM_FIELDS}
         if (
-            type(part.itemId) is not int
-            or part.itemId <= 0
+            (part.itemId is not None and (type(part.itemId) is not int or part.itemId <= 0))
             or self._invalid(values)
             or not _valid_stock(part.stockQuantity)
         ):
             return Response.warning("Invalid item information.")
         try:
             with self.database.transaction(immediate=True) as session:
-                if self._findRow(session, part.itemId) is not None:
+                if part.itemId is None:
+                    # Inside the locked transaction, so two adds cannot pick the same ID.
+                    part.itemId = session.fetch_all(
+                        f'SELECT COALESCE(MAX("{DatabaseColumns.ITEM_ID}"), 0) + 1 '
+                        f'FROM "{DatabaseTables.ITEM}"'
+                    )[0][0]
+                elif self._findRow(session, part.itemId) is not None:
                     return Response.warning("Item already exists.")
                 session.insert(
                     DatabaseTables.ITEM,
@@ -276,7 +284,7 @@ class InventoryList:
 
     @staticmethod
     def _toItem(row: tuple) -> Item:
-        itemId, name, description, price, category, brand, stock = row
+        itemId, name, description, price, category, brand, imagePath, stock = row
         return Item(
-            itemId, name, description or "", price, category or "", brand or "", stock
+            itemId, name, description or "", price, category or "", brand or "", stock, imagePath
         )

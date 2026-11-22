@@ -21,7 +21,8 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": backend,
-      "/assets": backend
+      "/assets": backend,
+      "/uploads": backend
     }
   }
 });

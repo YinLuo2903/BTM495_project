@@ -1,4 +1,6 @@
+import re
 from collections.abc import Mapping
+from datetime import datetime
 
 
 def string_value(values: Mapping[str, object], key: str) -> str:
@@ -65,3 +67,25 @@ def is_valid_expiration_date(expiration_date: object) -> bool:
 
 def is_valid_cvv(cvv: object) -> bool:
     return isinstance(cvv, str) and len(cvv) == 3 and cvv.isdigit()
+
+
+# Only paths the upload route itself hands out: /uploads/<32 hex>.<jpg|png|webp>.
+_IMAGE_PATH = re.compile(r"/uploads/[0-9a-f]{32}\.(?:jpg|png|webp)")
+
+
+def is_valid_image_path(image_path: object) -> bool:
+    """None (no image) or a path returned by POST /api/uploads."""
+    return image_path is None or (
+        isinstance(image_path, str) and _IMAGE_PATH.fullmatch(image_path) is not None
+    )
+
+
+def is_valid_datetime_text(value: object) -> bool:
+    """SQLite datetime text as the app stores it: "YYYY-MM-DD HH:MM:SS"."""
+    if not isinstance(value, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}", value):
+        return False
+    try:
+        datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        return False
+    return True

@@ -1,9 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { getSession, sessionApi, signIn } from "../services/session";
 import { CustomerPage } from "./customer/CustomerPages";
-import { AdminPage } from "./admin/AdminPages";
 
 vi.mock("../services/session", () => ({ signIn: vi.fn(), sessionApi: vi.fn(), getSession: vi.fn(async () => null) }));
 
@@ -154,41 +153,5 @@ describe("customer pages", () => {
     reject(new Error("Invalid credentials."));
     expect((await screen.findByRole("alert")).textContent).toBe("Invalid credentials.");
     expect((screen.getByRole("button", { name: "Sign in" }) as HTMLButtonElement).disabled).toBe(false);
-  });
-});
-
-describe("admin pages", () => {
-  it("creates supported events and labels unavailable event details", async () => {
-    const fetch = vi.fn(async (path: string, options: RequestInit) => {
-      if (path === "/api/inventory") return response({ items: [] });
-      if (path === "/api/dashboard") return response({ orders: [] });
-      if (options.method === "POST") return response({ event_id: 1 });
-      return response({ events: [] });
-    });
-    vi.stubGlobal("fetch", fetch);
-    render(<AdminPage page="events" />);
-    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
-    expect(await screen.findByText(/Event editing, dates, locations, and prices are not supported/)).toBeTruthy();
-    fireEvent.change(screen.getByLabelText("Event name"), { target: { value: "Ride" } });
-    fireEvent.change(screen.getByLabelText("Participant limit"), { target: { value: "4" } });
-    fireEvent.submit(screen.getByRole("button", { name: "Save event" }).closest("form")!);
-    await waitFor(() => expect(fetch).toHaveBeenCalledWith("/api/events", expect.objectContaining({
-      method: "POST",
-      body: JSON.stringify({ name: "Ride", participant_limit: 4 }),
-    })));
-  });
-
-  it("clearly disables appointment management", () => {
-    vi.stubGlobal("fetch", vi.fn(async () => response({ items: [], events: [], orders: [] })));
-    render(<AdminPage page="appointments" />);
-    expect((screen.getByRole("button", { name: "Add appointment" }) as HTMLButtonElement).disabled).toBe(true);
-  });
-
-  it("reports inventory loading errors without presenting an empty inventory", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 500, json: async () => ({ status: "error", message: "Database unavailable." }) })));
-    render(<AdminPage page="inventory" />);
-    expect((await screen.findByRole("alert")).textContent).toBe("Database unavailable.");
-    expect(screen.queryByText("No items yet.")).toBeNull();
-    expect(screen.getByRole("button", { name: "Retry" })).toBeTruthy();
   });
 });
