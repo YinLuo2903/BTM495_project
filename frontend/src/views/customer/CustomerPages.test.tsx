@@ -71,8 +71,15 @@ describe("customer widgets", () => {
     expect(screen.queryByText("No items found.")).toBeNull();
   });
 
+  it("renders the appointment booking page with Continue disabled until a slot is chosen", async () => {
+    mockResponse({ status: "ok", today: "2026-11-21", slots: [], slot_minutes: 60, open_weekdays: [], days: [] });
+    render(<CustomerPage page="appointments" />);
+    expect(screen.getByRole("heading", { level: 1, name: "Book a Repair Appointment" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Continue" }).matches(":disabled")).toBe(true);
+    await screen.findByText("Choose an available date on the calendar to see open times.");
+  });
+
   it.each([
-    ["appointments", "Book appointment"],
     ["cart", "Checkout"],
     ["checkout", "Confirm order"],
   ])("keeps unavailable %s actions disabled", (page, button) => {

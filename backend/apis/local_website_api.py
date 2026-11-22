@@ -1,13 +1,15 @@
 import logging
 import os
+import re
 import socket
 import sqlite3
 import time
 from datetime import datetime
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
+from backend.apis.appointment_booking_api import AppointmentBookingAPI
 from backend.apis.event_registration_api import EventRegistrationAPI
 from backend.apis.local_website_extra_api import handle_route, is_extra_route
 from backend.apis.profile_api import ManageProfile
@@ -278,7 +280,7 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
         if urlsplit(self.path).path in FRONTEND_PAGES and not (FRONTEND_BUILD_DIR / "index.html").is_file():
             self.send_error(503, "Frontend build missing; run npm ci and npm run build in frontend.")
             return
-        if self._extra_route("GET") or self._my_events("GET"):
+        if self._extra_route("GET") or self._my_events("GET") or self._appointments("GET"):
             return
         request_path = urlsplit(self.path).path
         if request_path == "/api/session":
@@ -395,7 +397,7 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
         self._send_json({"status": "ok"}, 200)
 
     def do_POST(self) -> None:
-        if self._extra_route("POST") or self._my_events("POST"):
+        if self._extra_route("POST") or self._my_events("POST") or self._appointments("POST"):
             return
         request_path = urlsplit(self.path).path
         if request_path == "/api/sample-orders":
@@ -678,6 +680,91 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
             )
         return customer
 
+    def _session_customer_id(self, signed_out_message: str) -> int | None:
+        """ID of the signed-in customer, or send an error response and return None."""
+        try:
+            customer_id = SessionManager(DB_PATH).get_customer_id(self._bearer_token())
+        except sqlite3.Error:
+            logger.exception("Could not validate session")
+            self._send_json(
+                {"status": "error", "message": "Could not validate session."}, 500
+            )
+            return None
+        if customer_id is None:
+            self._send_json({"status": "error", "message": signed_out_message}, 401)
+        return customer_id
+
+    def _appointments(self, method: str) -> bool:
+        """Serve appointment booking; return False when the path is not one of its routes.
+
+        GET /api/appointments/availability?month=YYYY-MM is public. POST
+        /api/my-appointments books for the signed-in customer, taken from the
+        session token, never from the request body.
+        """
+        request = urlsplit(self.path)
+        if request.path == "/api/appointments/availability" and method == "GET":
+            month = parse_qs(request.query).get("month", [""])[0]
+            match = re.fullmatch(r"(\d{4})-(\d{2})", month)
+            if not match:
+                self._send_json(
+                    {"status": "error", "message": "month must look like YYYY-MM."}, 400
+                )
+                return True
+            try:
+                result = AppointmentBookingAPI(DB_PATH).monthAvailability(
+                    int(match[1]), int(match[2])
+                )
+            except sqlite3.Error:
+                logger.exception("Could not load appointment availability")
+                self._send_json({"status": "error", "message": "Database error."}, 500)
+                return True
+            if result.success:
+                self._send_json({"status": "ok", **result.data}, 200)
+            else:
+                self._send_json({"status": "error", "message": result.msg}, 400)
+            return True
+
+        if request.path != "/api/my-appointments":
+            return False
+        if method != "POST":
+            self._send_json({"status": "error", "message": "Not found."}, 404)
+            return True
+        customer_id = self._session_customer_id(
+            "Sign in with a customer account to book an appointment."
+        )
+        if customer_id is None:
+            return True
+        try:
+            payload = read_json_object(
+                self, self.MAX_REQUEST_BYTES, request_name="Appointment"
+            )
+        except HTTPRequestError as error:
+            self._send_json(
+                {"status": "error", "message": str(error)}, error.status_code
+            )
+            return True
+        try:
+            result = AppointmentBookingAPI(DB_PATH).book(
+                customer_id,
+                payload.get("date"),
+                payload.get("time"),
+                payload.get("repair_type"),
+                payload.get("description"),
+            )
+        except sqlite3.Error:
+            logger.exception("Could not book appointment")
+            self._send_json({"status": "error", "message": "Database error."}, 500)
+            return True
+        if result.success:
+            logger.info("Appointment booked for customer %s", customer_id)
+            self._send_json({"status": "ok", "appointment": result.data}, 201)
+        else:
+            # 409 tells the page the slot was taken meanwhile, so it can refresh times.
+            conflict = isinstance(result.data, dict) and result.data.get("conflict") is True
+            status = 409 if conflict else 400
+            self._send_json({"status": "error", "message": result.msg}, status)
+        return True
+
     def _my_events(self, method: str) -> bool:
         """Serve the signed-in customer's event registrations.
 
@@ -701,17 +788,12 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
         ):
             self._send_json({"status": "error", "message": "Not found."}, 404)
             return True
+        customer_id = self._session_customer_id(
+            "Sign in with a customer account to register for events."
+        )
+        if customer_id is None:
+            return True
         try:
-            customer_id = SessionManager(DB_PATH).get_customer_id(self._bearer_token())
-            if customer_id is None:
-                self._send_json(
-                    {
-                        "status": "error",
-                        "message": "Sign in with a customer account to register for events.",
-                    },
-                    401,
-                )
-                return True
             registrations = EventRegistrationAPI(DB_PATH)
             if method == "GET":
                 result = registrations.listCustomerEvents(customer_id)

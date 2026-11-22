@@ -1,0 +1,449 @@
+/*
+ * Customer repair-appointment booking page.
+ * Layout, cards, header, buttons, month navigation, legend and alerts reuse
+ * the Events page styles in events.css (.ev-*); this file adds what is
+ * specific to booking: the step indicator, time slots, availability days
+ * and the issue form.
+ */
+
+.ap-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.ap-small {
+  font-size: 15px;
+}
+
+/* ---- Step indicator ---- */
+
+.ap-steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  margin: 0;
+  padding: 22px 28px;
+  border-bottom: 1px solid var(--color-border);
+  list-style: none;
+}
+
+.ap-step {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: var(--font-small);
+}
+
+.ap-step:last-child {
+  flex: 0 0 auto;
+}
+
+/* Connector line between steps. */
+.ap-step:not(:last-child)::after {
+  content: "";
+  flex: 1 1 24px;
+  min-width: 16px;
+  height: 2px;
+  border-radius: 2px;
+  background: #e0e0e0;
+}
+
+.ap-step-mark {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  box-sizing: border-box;
+  border: 1.5px solid #cfcfcf;
+  border-radius: 50%;
+  background: var(--surface);
+  font-weight: 700;
+}
+
+.ap-step-label {
+  white-space: nowrap;
+}
+
+.ap-step-active {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.ap-step-active .ap-step-mark {
+  border-color: var(--brand);
+  color: var(--ink);
+  background: var(--brand);
+}
+
+.ap-step-complete {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.ap-step-complete .ap-step-mark {
+  border-color: var(--ink);
+  color: #fff;
+  background: var(--ink);
+}
+
+.ap-step-complete:not(:last-child)::after {
+  background: var(--ink);
+}
+
+/* ---- Step body ---- */
+
+.ap-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px 28px 28px;
+}
+
+@keyframes ap-step-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.ap-step-in {
+  animation: ap-step-in 0.25s ease-out;
+}
+
+.ap-step-title {
+  margin: 0 0 4px;
+  font-size: 20px;
+}
+
+.ap-step-title:focus,
+.ap-success-title:focus {
+  outline: none;
+}
+
+.ap-body p {
+  margin: 0;
+}
+
+.ap-hint {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 18px 20px;
+  border: 1.5px dashed #d6d6d6;
+  border-radius: 12px;
+  color: #555;
+  background: var(--background);
+}
+
+.ap-hint svg {
+  flex: 0 0 auto;
+  color: var(--ev-brand-text);
+}
+
+/* ---- Time slots ---- */
+
+.ap-slots {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.ap-slots legend {
+  margin-bottom: 12px;
+  padding: 0;
+  font-weight: 600;
+}
+
+.ap-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ap-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 4px;
+  border: 1.5px solid #d6d6d6;
+  border-radius: 10px;
+  color: var(--ink);
+  background: var(--surface);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.ap-slot:hover:not(:disabled) {
+  border-color: var(--brand);
+}
+
+.ap-slot-selected,
+.ap-slot-selected:hover:not(:disabled) {
+  border-color: var(--brand);
+  background: var(--brand);
+  font-weight: 700;
+}
+
+.ap-slot:disabled {
+  border-color: #ececec;
+  color: #6b6b6b;
+  background: #f5f5f5;
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+
+.ap-slot-note {
+  font-size: 12px;
+}
+
+/* ---- Issue form ---- */
+
+.ap-selected {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--ev-tint);
+}
+
+.ap-selected-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+
+.ap-selected-text svg {
+  flex: 0 0 auto;
+  color: var(--ev-brand-text);
+}
+
+.customer-content .ap-link-button {
+  min-height: 44px;
+  padding: 0 6px;
+  border: 0;
+  color: var(--ev-brand-text);
+  background: transparent;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.ap-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.customer-content .ap-field label {
+  margin-top: 0;
+  font-size: 15px;
+}
+
+.ap-required,
+.ap-error {
+  color: var(--ev-danger);
+}
+
+.ap-error {
+  font-size: var(--font-small);
+}
+
+.ap-field select {
+  min-height: 48px;
+}
+
+.ap-textarea {
+  width: 100%;
+  min-height: 128px;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.ap-field select[aria-invalid="true"],
+.ap-textarea[aria-invalid="true"] {
+  border-color: var(--ev-danger);
+}
+
+.ap-textarea:focus-visible {
+  outline: 3px solid var(--brand-dark);
+  outline-offset: 2px;
+}
+
+.ap-field-help {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  font-size: var(--font-small);
+}
+
+/* ---- Summary ---- */
+
+.ap-summary {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.ap-summary > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding: 14px 18px;
+}
+
+.ap-summary > div + div {
+  border-top: 1px solid #ececec;
+}
+
+.ap-summary dt {
+  flex: 0 0 160px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.ap-summary dd {
+  flex: 1 1 240px;
+  min-width: 0;
+  margin: 0;
+  font-weight: 600;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.ap-page .ev-confirm h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+/* ---- Calendar days ---- */
+
+.ap-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 52px;
+  box-sizing: border-box;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  font-size: 15px;
+}
+
+.ap-day-outside {
+  color: #c4c4c4;
+}
+
+.ap-day-off {
+  color: #6b6b6b;
+  background: #f5f5f5;
+}
+
+.ap-day-full {
+  text-decoration: line-through;
+}
+
+button.ap-day-open {
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  border-color: #ececec;
+  color: var(--ink);
+  background: var(--surface);
+  font-weight: 700;
+}
+
+button.ap-day-open:hover {
+  border-color: var(--brand);
+}
+
+.ap-day.ap-day-today {
+  border-color: var(--ink);
+}
+
+button.ap-day-selected,
+button.ap-day-selected:hover {
+  border-color: var(--brand);
+  background: var(--brand);
+}
+
+button.ap-day-selected.ap-day-today {
+  border-color: var(--ink);
+}
+
+.ap-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+.ap-day-selected .ap-dot {
+  background: var(--ink);
+}
+
+.ap-legend-off {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  color: #6b6b6b;
+  background: #f5f5f5;
+  font-size: 10px;
+  line-height: 14px;
+  text-align: center;
+  text-decoration: line-through;
+}
+
+.ap-cal-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+  color: #555;
+  font-size: var(--font-small);
+}
+
+.ap-cal-info p {
+  margin: 0;
+}
+
+.ap-cal-info strong {
+  color: var(--ink);
+}
+
+@media (max-width: 480px) {
+  .ap-steps { padding: 16px 20px; }
+  .ap-step-label { white-space: normal; }
+  .ap-body { padding: 20px; }
+  .ap-slot-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ap-day { height: 44px; }
+  .ap-summary dt { flex-basis: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ap-step-in { animation: none; }
+}

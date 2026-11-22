@@ -7,6 +7,7 @@ import sys
 import threading
 import unittest
 from contextlib import closing
+from datetime import date, timedelta
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from urllib.error import HTTPError
@@ -15,6 +16,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from backend.apis.appointment_booking_api import OPEN_WEEKDAYS
 from backend.apis.local_website_api import create_server, ensure_local_demo_login
 from backend.apis.profile_api import ManageProfile
 from backend.apis.session_api import SESSION_LIFETIME_SECONDS
@@ -721,6 +723,61 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
         self.assertEqual(self._auth_json("DELETE", "/api/my-events/7", token)[0], 404)
         self.assertEqual(
             self._auth_json("GET", "/api/my-events", token)[1]["event_ids"], []
+        )
+
+    def test_customer_books_repair_appointment(self) -> None:
+        day = date.today() + timedelta(days=2)
+        while day.weekday() not in OPEN_WEEKDAYS:
+            day += timedelta(days=1)
+        month = day.strftime("%Y-%m")
+
+        self.assertEqual(
+            self._json("GET", "/api/appointments/availability?month=2026-1")[0], 400
+        )
+        status, body = self._json("GET", f"/api/appointments/availability?month={month}")
+        self.assertEqual(status, 200)
+        days = {entry["date"]: entry for entry in body["days"]}
+        self.assertEqual(days[day.isoformat()], {"date": day.isoformat(), "state": "open", "booked": []})
+
+        booking = {
+            "date": day.isoformat(),
+            "time": "14:00",
+            "repair_type": "Gear Adjustment",
+            "description": "Chain skips on the smallest cog.",
+        }
+        self.assertEqual(self._auth_json("POST", "/api/my-appointments", "", booking)[0], 401)
+        self._json(
+            "POST",
+            "/api/signup",
+            {
+                "first_name": "Jamie",
+                "last_name": "Rivera",
+                "email": "jamie@example.com",
+                "phone": "514-555-0123",
+                "address": "12 Rue Sherbrooke O, Montreal",
+                "password": "secret-pass",
+            },
+        )
+        token = self._json(
+            "POST",
+            "/api/login",
+            {"email": "jamie@example.com", "password": "secret-pass"},
+        )[1]["token"]
+
+        status, body = self._auth_json("POST", "/api/my-appointments", token, booking)
+        self.assertEqual(status, 201)
+        self.assertEqual(body["appointment"]["time"], "14:00")
+        status, body = self._auth_json("POST", "/api/my-appointments", token, booking)
+        self.assertEqual(status, 409)
+        status, body = self._auth_json(
+            "POST", "/api/my-appointments", token, {**booking, "time": "15:00", "repair_type": "Paint"}
+        )
+        self.assertEqual((status, body["message"]), (400, "Select a repair type."))
+        self.assertEqual(self._auth_json("GET", "/api/my-appointments", token)[0], 404)
+
+        _, body = self._json("GET", f"/api/appointments/availability?month={month}")
+        self.assertEqual(
+            {entry["date"]: entry for entry in body["days"]}[day.isoformat()]["booked"], ["14:00"]
         )
 
     def test_edit_order_and_payment_amounts(self) -> None:

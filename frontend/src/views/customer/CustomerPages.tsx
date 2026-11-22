@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { sessionApi, signIn } from "../../services/session";
 import { api, errorMessage, formatAmount, type CustomerProfile, type Item, type ShopEvent } from "../../services/api";
+import { AppointmentsPage } from "./AppointmentsPage";
 import { EventsPage } from "./EventsPage";
 
 function useRemote<T>(path: string) {
@@ -262,7 +263,7 @@ export function CustomerPage({ page }: { page: string }) {
     case "cart": content = <Card><h2>Cart items</h2><p className="customer-notice">Customer carts, quantities, and totals are not available yet.</p><button disabled>Checkout</button><p><a href="checkout.html">View checkout page</a></p></Card>; break;
     case "checkout": content = <Card><h2>Review your order</h2><p className="customer-notice">Customer checkout is not available yet. The local demo supports mock credit-card payments only.</p><form><fieldset disabled><label htmlFor="payment-method">Payment method</label><select id="payment-method"><option>Credit card</option><option>Debit card</option></select><p><button>Confirm order</button></p></fieldset></form></Card>; break;
     case "orders": content = <Card><h2>Order history</h2><p className="customer-notice">Personal order history, statuses, and details require customer sessions and are not available yet.</p></Card>; break;
-    case "appointments": content = <><Card><h2>Book an appointment</h2><p className="customer-notice">Booking and personal appointment lists are not available yet.</p><form><fieldset disabled><label htmlFor="appointment-date">Date and time</label><input id="appointment-date" type="datetime-local" /><label htmlFor="appointment-notes">Service</label><input id="appointment-notes" /><p><button>Book appointment</button></p></fieldset></form></Card><Card><h2>Your appointments</h2><p className="muted">Appointment history is not available yet.</p></Card></>; break;
+    case "appointments": content = <AppointmentsPage />; break;
     default: content = <Card><h1>Page not found</h1></Card>;
   }
   return <main className={`page customer-content${page === "login" ? " login-page" : ""}`}>{content}</main>;
