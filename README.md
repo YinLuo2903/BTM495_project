@@ -55,61 +55,62 @@ running and, in a second terminal, run `npm run dev` in `frontend`, then open
 
 **Step 3. Try the features in the browser**
 
-| Section on the page | What to try |
+**As a customer**
+
+| What to do | How |
 | --- | --- |
-| Profile login | Sign in with `login@example.com` / `1234`. |
-| Admin login | On the customer Sign In page, use `admin@lpvr.com` / `123456789` to open the admin dashboard. The start script creates this admin if it is missing. |
-| Database structure | See all tables and row counts. `status` has 3 rows: Pending, Completed, Cancelled. Click **Refresh data** to reload. |
-| Orders | Click **Make a payment** to create a $50 sample order. Use the edit and delete icons on a row, or **Remove all orders**. |
-| Mock credit card | The form is prefilled with a valid test card. Click **Review payment** and confirm. Any other card number is declined. |
-| Payment history | See paid payments. Use the edit and delete icons, or **Remove all payments**. |
-| Inventory | Click **Save item** to add or update an item. Click the history icon to see stock changes (who, when, why). Use the delete icon to remove it. |
-| Event registration | Click **Add sample event (limit 2)**, then register customer IDs until it is full. Duplicate and over-limit registrations are rejected. Unregister with the `🗑 #id` button. |
+| Sign in | Click **Sign In** and use `login@example.com` / `1234`. |
+| Shop | Open **Items**, add items to the **Shopping Cart**, then check out. |
+| Join an event | Open **Events** and register for an event. |
+| Book a repair | Open **Appointments** and book a repair appointment. |
+| Update your details | Once signed in, click your name to open **My Profile** and edit your details. |
+| Create an account | New customers click **Create account** at the top of the home page. |
+
+**As an admin**
+
+| What to do | How |
+| --- | --- |
+| Sign in | Click **Sign In** and use `admin@lpvr.com` / `123456789`. The admin dashboard opens. |
+| See accounts and the schedule | **Customers** lists every registered account. **Dashboard** shows this week's events and appointments. |
+| Manage the shop | Create, view, update and delete **Events**, **Appointments** and **Inventory**. |
 
 No real payment is made and card details are never stored.
 
-The customer views are also available at
-`http://localhost:8765/views/customer/index.html`, linked from the local demo.
-They include a browsable catalog, event list, and login. Other
-customer pages are view scaffolds: signup, personal orders, cart, checkout,
-event registration, appointments, and profile editing are not yet available.
-Both login forms retain the session in the browser. The customer login redirects
-customers to the home page and admins to the admin dashboard; use **Sign Out**
-in the shared navigation or on the local demo page to revoke the session. Both
-forms include a password visibility toggle and display sign-in progress and
-errors.
-Customer pages share a navigation bar linking to the
-customer home, items, events, appointments, and shopping cart. Guests see
-**Sign In** and **Create account**; once signed in, the customer's name links
-to **My Profile** (an admin's name links to the admin dashboard) next to
-**Sign Out**.
-Admin signup is not yet available. The local demo remains available at `/`.
+### Where to find each part
 
-### Admin dashboard
+| Part | Address |
+| --- | --- |
+| Customer site | `http://localhost:8765/views/customer/index.html` |
+| Admin dashboard | `http://localhost:8765/views/admin/index.html` |
+| Local demo (developer test page) | `http://localhost:8765/` |
 
-Signing in as `admin@lpvr.com` opens `/views/admin/index.html`. Admin pages
-have their own left sidebar: **Dashboard, Customers, Events, Appointments,
-Orders, Payments, Inventory**.
+Customers and the admin share one **Sign In** page: customers land on the home
+page, the admin lands on the dashboard. You stay signed in for 24 hours or
+until you click **Sign Out**. Admin accounts can't be created from the website.
 
-- **Dashboard:** customer count, plus this month's paid revenue, pending
-  orders and upcoming events, and a weekly table of events and appointments
-  (click one to open it).
-- **Every section** has search, status (or stock) filters, sortable columns,
-  15 rows per page and a right-side details panel.
-- **Events, Appointments, Inventory:** Add New, edit and delete. Events and
-  items can have an image (JPG, PNG or WebP, up to 2 MB); it shows on the
-  customer Events, Items and item pages.
-- **Customers, Orders, Payments:** view and delete only; they come from
-  sign-up and checkout. A customer who still has orders or appointments is
-  kept for the shop's records.
+### Admin dashboard details
 
-Routes used: `/api/events` (GET, POST, PATCH, DELETE), `/api/inventory`,
-`/api/dashboard` (orders and payments), `/api/orders/<id>` and
-`/api/payments/<id>` (DELETE), `/api/admin/customers` (GET, DELETE),
-`/api/admin/appointments` (GET, POST, PATCH, DELETE) and `/api/uploads`
-(POST an image; files are saved in `database/uploads/` and served at
-`/uploads/`). Like the rest of this local demo, these routes are not
-protected by a session check.
+- **Dashboard:** customer count, this month's paid revenue, pending orders and
+  upcoming events, plus the weekly table (click an entry to open it).
+- **Every section** has search, filters, sortable columns, 15 rows per page
+  and a details panel on the right.
+- **Images:** events and items accept a JPG, PNG or WebP image up to 2 MB. It
+  appears on the customer Events and Items pages.
+- **Customers, Orders, Payments** are view and delete only, because they come
+  from sign-up and checkout. A customer who still has orders or appointments
+  can't be deleted.
+
+API routes behind the admin pages (not protected by a session check in this
+local demo):
+
+| Section | Route |
+| --- | --- |
+| Customers | `/api/admin/customers` (GET, DELETE) |
+| Events | `/api/events` (GET, POST, PATCH, DELETE) |
+| Appointments | `/api/admin/appointments` (GET, POST, PATCH, DELETE) |
+| Inventory | `/api/inventory` |
+| Orders, Payments | `/api/dashboard` to list; `/api/orders/<id>` and `/api/payments/<id>` to delete |
+| Images | `/api/uploads` (POST); saved in `database/uploads/`, served at `/uploads/` |
 
 ### Frontend development
 
@@ -131,7 +132,7 @@ npm test
 For automatic test reruns while editing, run `npm run test:watch` in another
 terminal. `npm test` runs the suite once and exits.
 
-Vite serves the frontend and proxies `/api` and `/assets` to the Python
+Vite serves the frontend and proxies `/api`, `/assets` and `/uploads` to the Python
 server, keeping the demo and frontend on the same origin. If the Python
 server uses a different port, set `VITE_BACKEND_ORIGIN` before starting Vite
 (for example, in PowerShell: `$env:VITE_BACKEND_ORIGIN='http://127.0.0.1:8766'`).
@@ -165,14 +166,14 @@ admin pages, and the local demo's primary interactions.
 | Folder / file | Purpose |
 | --- | --- |
 | `frontend/src/main.tsx` | React entry point; picks the page from the URL |
-| `frontend/src/views/customer/` | Customer screens; unsupported actions are identified |
-| `frontend/src/views/admin/` | Admin screens; unsupported actions are identified |
+| `frontend/src/views/customer/` | Customer screens: items, cart, checkout, events, appointments, profile, sign-in and sign-up |
+| `frontend/src/views/admin/` | Admin dashboard, sidebar and the shared management table |
 | `frontend/src/views/demo/` | Local dry-run dashboard, payment, inventory, and event widgets |
 | `frontend/src/components/` | Shared layout and navigation |
 | `frontend/src/services/` | API client and login session helpers |
 | `frontend/css/style.css` | Shared styles for all website pages |
 | `frontend/tests/` | Vite dev-server test (each `*.test.tsx` sits next to its source file) |
-| `backend/apis/` | Local website server and application operations (profiles, cart, orders, payments, inventory, events) |
+| `backend/apis/` | Local website server and application operations (profiles, cart, orders, payments, inventory, events, appointments, admin, image uploads) |
 | `backend/models/` | Python classes for users, items, carts, orders, payments, events, appointments |
 | `backend/utils/` | SQLite query builder and transactions, validation, logging, responses, table/column/status constants |
 | `database/` | `schema.sql` (tables), `sqlite_database.py` (creates and upgrades `lpvr.db`) |
