@@ -5,6 +5,7 @@ import re
 import sqlite3
 import sys
 import threading
+import time
 import unittest
 from contextlib import closing
 from datetime import date, timedelta
@@ -20,6 +21,7 @@ from backend.apis.appointment_booking_api import OPEN_WEEKDAYS
 from backend.apis.local_website_api import create_server, ensure_local_demo_login
 from backend.apis.profile_api import ManageProfile
 from backend.apis.session_api import SESSION_LIFETIME_SECONDS
+from backend.apis.shopping_cart_api import ShoppingCartAPI
 from backend.models.admin import Admin
 from backend.models.customer import Customer
 
@@ -779,6 +781,128 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
         self.assertEqual(
             {entry["date"]: entry for entry in body["days"]}[day.isoformat()]["booked"], ["14:00"]
         )
+
+    def test_signed_in_customer_adds_items_to_cart_within_stock(self) -> None:
+        with closing(sqlite3.connect(self.database_path)) as connection:
+            connection.executemany(
+                "INSERT INTO item (item_id, name, price) VALUES (?, ?, ?)",
+                [(1, "Road Bike", 2199.0), (2, "Floor Pump", 49.0), (3, "Tune-up", 40.0)],
+            )
+            # Item 3 has no inventory row, so its stock is not tracked.
+            connection.executemany(
+                "INSERT INTO inventory (item_id, quantity) VALUES (?, ?)", [(1, 2), (2, 0)]
+            )
+            connection.commit()
+
+        self.assertEqual(self._auth_json("GET", "/api/my-cart", "")[0], 401)
+        self.assertEqual(
+            self._auth_json("POST", "/api/my-cart", "", {"item_id": 1})[0], 401
+        )
+        self._json(
+            "POST",
+            "/api/signup",
+            {
+                "first_name": "Jamie",
+                "last_name": "Rivera",
+                "email": "jamie@example.com",
+                "phone": "514-555-0123",
+                "address": "12 Rue Sherbrooke O, Montreal",
+                "password": "secret-pass",
+            },
+        )
+        token = self._json(
+            "POST", "/api/login", {"email": "jamie@example.com", "password": "secret-pass"}
+        )[1]["token"]
+
+        status, body = self._auth_json("GET", "/api/my-cart", token)
+        self.assertEqual((status, body["items"], body["count"], body["total"]), (200, [], 0, 0))
+
+        status, body = self._auth_json("POST", "/api/my-cart", token, {"item_id": 1})
+        self.assertEqual(status, 200)
+        self.assertEqual(body["message"], "Road Bike added to your cart.")
+        self.assertEqual(
+            [(line["item_id"], line["quantity"]) for line in body["items"]], [(1, 1)]
+        )
+        self.assertEqual(body["count"], 1)
+        self.assertEqual(self._auth_json("POST", "/api/my-cart", token, {"item_id": 1})[1]["count"], 2)
+
+        # A third bike would exceed the stock of 2; the cart stays as it was.
+        status, body = self._auth_json("POST", "/api/my-cart", token, {"item_id": 1})
+        self.assertEqual(status, 409)
+        self.assertEqual(body["message"], "Your cart already has 2 of Road Bike; only 2 in stock.")
+        self.assertEqual(body["count"], 2)
+
+        status, body = self._auth_json("POST", "/api/my-cart", token, {"item_id": 2})
+        self.assertEqual((status, body["message"]), (409, "Floor Pump is out of stock."))
+
+        status, body = self._auth_json(
+            "POST", "/api/my-cart", token, {"item_id": 3, "quantity": 5}
+        )
+        self.assertEqual((status, body["count"]), (200, 7))
+
+        self.assertEqual(self._auth_json("POST", "/api/my-cart", token, {"item_id": 99})[0], 404)
+        for bad in ({"item_id": "1"}, {"item_id": 0}, {"item_id": 1, "quantity": 0}, {"item_id": 3, "quantity": 100}):
+            self.assertEqual(self._auth_json("POST", "/api/my-cart", token, bad)[0], 400, bad)
+        self.assertEqual(self._auth_json("DELETE", "/api/my-cart", token)[0], 404)
+
+        # The shopping cart page reads names, prices, subtotals and the total from here.
+        status, body = self._auth_json("GET", "/api/my-cart", token)
+        self.assertEqual(
+            body["items"],
+            [
+                {"item_id": 1, "name": "Road Bike", "category": "", "price": 2199.0,
+                 "quantity": 2, "subtotal": 4398.0, "stock_quantity": 2},
+                {"item_id": 3, "name": "Tune-up", "category": "", "price": 40.0,
+                 "quantity": 5, "subtotal": 200.0, "stock_quantity": None},
+            ],
+        )
+        self.assertEqual((body["count"], body["total"]), (7, 4598.0))
+
+    def test_concurrent_cart_adds_are_all_kept(self) -> None:
+        with closing(sqlite3.connect(self.database_path)) as connection:
+            connection.execute("INSERT INTO item (item_id, name, price) VALUES (1, 'Tune-up', 40.0)")
+            connection.commit()
+        self._json(
+            "POST",
+            "/api/signup",
+            {
+                "first_name": "Jamie",
+                "last_name": "Rivera",
+                "email": "jamie@example.com",
+                "phone": "514-555-0123",
+                "address": "12 Rue Sherbrooke O, Montreal",
+                "password": "secret-pass",
+            },
+        )
+        token = self._json(
+            "POST", "/api/login", {"email": "jamie@example.com", "password": "secret-pass"}
+        )[1]["token"]
+        self._auth_json("GET", "/api/my-cart", token)  # create the cart row first
+
+        statuses: list[int] = []
+        start = threading.Barrier(10)
+
+        def add() -> None:
+            start.wait()
+            statuses.append(self._auth_json("POST", "/api/my-cart", token, {"item_id": 1})[0])
+
+        # Widen the load→save window so a missing lock reliably loses updates.
+        load_cart = ShoppingCartAPI.loadCart
+
+        def slow_load(api: ShoppingCartAPI, customer_id: int):
+            cart = load_cart(api, customer_id)
+            time.sleep(0.05)
+            return cart
+
+        threads = [threading.Thread(target=add) for _ in range(10)]
+        with patch.object(ShoppingCartAPI, "loadCart", slow_load):
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join()
+
+        self.assertEqual(statuses, [200] * 10)
+        self.assertEqual(self._auth_json("GET", "/api/my-cart", token)[1]["count"], 10)
 
     def test_edit_order_and_payment_amounts(self) -> None:
         self._add_payment()

@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { sessionApi, signIn } from "../../services/session";
-import { api, errorMessage, formatAmount, type CustomerProfile, type Item, type ShopEvent } from "../../services/api";
+import { api, errorMessage, type CustomerProfile, type ShopEvent } from "../../services/api";
 import { AppointmentsPage } from "./AppointmentsPage";
+import { CartPage } from "./CartPage";
 import { EventsPage } from "./EventsPage";
+import { ItemDetailPage } from "./ItemDetailPage";
+import { ItemsPage } from "./ItemsPage";
 
 function useRemote<T>(path: string) {
   const [data, setData] = useState<T | null>(null);
@@ -67,29 +70,6 @@ function Login() {
     <p className="login-demo muted">Local demo: <code>login@example.com</code> / <code>1234</code></p>
     <p className="login-signup"><a href="signup.html">Create an account</a></p>
   </section>;
-}
-
-function Items({ detail = false }: { detail?: boolean }) {
-  const { data, error } = useRemote<{ items: Item[] }>("/api/inventory");
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("");
-  const items = data?.items ?? [];
-  const id = new URLSearchParams(location.search).get("id");
-  const item = id && /^[1-9]\d*$/.test(id) ? items.find(value => String(value.item_id) === id) : undefined;
-  const categories = [...new Set(items.map(value => value.category).filter(Boolean))].sort();
-  const matching = items.filter(value => (!category || value.category === category) &&
-    [value.name, value.brand].some(text => (text || "").toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())));
-  const details = (value: Item) => `${formatAmount(value.price)}${value.brand ? ` · ${value.brand}` : ""}${value.category ? ` · ${value.category}` : ""}`;
-  if (detail) return <Card><p role="status" className={error ? "error" : undefined}>{error || (!id || !/^[1-9]\d*$/.test(id) ? "Choose an item from the items page." : !data ? "Loading item…" : !item ? "Item not found." : "")}</p>
-    {item && <div><h2>{item.name}</h2><p>{item.description || "No description available."}</p><p>{details(item)}</p></div>}
-    <p className="customer-notice">Adding items to a cart is not available yet.</p><button disabled>Add to cart</button><p><a href="items.html">Back to items</a></p></Card>;
-  return <Card><h2>Browse items</h2><label htmlFor="item-search">Search by name or brand</label>
-    <input id="item-search" type="search" value={search} onChange={event => setSearch(event.target.value)} />
-    <label htmlFor="item-category">Category</label><select id="item-category" value={category} onChange={event => setCategory(event.target.value)}>
-      <option value="">All categories</option>{categories.map(value => <option key={value}>{value}</option>)}</select>
-    <p role="status" className={error ? "error" : undefined}>{error || (!data ? "Loading items…" : matching.length ? "" : "No items found.")}</p>
-    <ul className="customer-list">{matching.map(value => <li key={value.item_id}><a href={`item.html?id=${encodeURIComponent(value.item_id)}`}>{value.name}</a><p>{details(value)}</p></li>)}</ul>
-  </Card>;
 }
 
 function Home() {
@@ -257,10 +237,10 @@ export function CustomerPage({ page }: { page: string }) {
     case "login": content = <Login />; break;
     case "signup": content = <Signup />; break;
     case "profile": content = <Profile />; break;
-    case "items": content = <Items />; break;
-    case "item": content = <Items detail />; break;
+    case "items": content = <ItemsPage />; break;
+    case "item": content = <ItemDetailPage />; break;
     case "events": content = <EventsPage />; break;
-    case "cart": content = <Card><h2>Cart items</h2><p className="customer-notice">Customer carts, quantities, and totals are not available yet.</p><button disabled>Checkout</button><p><a href="checkout.html">View checkout page</a></p></Card>; break;
+    case "cart": content = <CartPage />; break;
     case "checkout": content = <Card><h2>Review your order</h2><p className="customer-notice">Customer checkout is not available yet. The local demo supports mock credit-card payments only.</p><form><fieldset disabled><label htmlFor="payment-method">Payment method</label><select id="payment-method"><option>Credit card</option><option>Debit card</option></select><p><button>Confirm order</button></p></fieldset></form></Card>; break;
     case "orders": content = <Card><h2>Order history</h2><p className="customer-notice">Personal order history, statuses, and details require customer sessions and are not available yet.</p></Card>; break;
     case "appointments": content = <AppointmentsPage />; break;

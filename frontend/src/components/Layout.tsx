@@ -1,10 +1,11 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { CART_CHANGE_EVENT, fetchCart, type CartSummary } from "../services/cart";
 import { signOut, watchSession, type Session } from "../services/session";
 
 const customerLinks = [
   ["Home", "/views/customer/index.html"], ["Items", "/views/customer/items.html"],
   ["Events", "/views/customer/events.html"], ["Appointments", "/views/customer/appointments.html"],
-  ["Cart", "/views/customer/cart.html"], ["Profile", "/views/customer/profile.html"],
+  ["Shopping Cart", "/views/customer/cart.html"], ["Profile", "/views/customer/profile.html"],
   ["Signup", "/views/customer/signup.html"],
 ];
 const adminLinks = [
@@ -17,6 +18,7 @@ export function Layout({ admin, children }: { admin: boolean; children: ReactNod
   const [session, setSession] = useState<Session | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
 
   useEffect(() => {
     return watchSession((value, error) => {
@@ -24,6 +26,23 @@ export function Layout({ admin, children }: { admin: boolean; children: ReactNod
       setMessage(error ? `Session unavailable: ${error.message}` : value ? `Signed in: ${value.user.name}` : "");
     });
   }, []);
+
+  // Cart count badge: only customers have a cart.
+  const isCustomer = Boolean(session && !session.user.is_admin);
+  useEffect(() => {
+    if (admin || !isCustomer) {
+      setCartCount(0);
+      return;
+    }
+    let active = true;
+    fetchCart().then(cart => { if (active) setCartCount(cart.count); }).catch(() => undefined);
+    const onChange = (event: Event) => setCartCount((event as CustomEvent<CartSummary>).detail.count);
+    window.addEventListener(CART_CHANGE_EVENT, onChange);
+    return () => {
+      active = false;
+      window.removeEventListener(CART_CHANGE_EVENT, onChange);
+    };
+  }, [admin, isCustomer]);
 
   async function logout() {
     setBusy(true);
@@ -44,7 +63,12 @@ export function Layout({ admin, children }: { admin: boolean; children: ReactNod
           <span className="nav-title">LE PETIT VÉLO ROUGE{admin ? " - ADMIN" : ""}</span>
         </div>
         <ul className="nav-menu">
-          {(admin ? adminLinks : customerLinks).map(([label, href]) => <li key={href}><a href={href}>{label}</a></li>)}
+          {(admin ? adminLinks : customerLinks).map(([label, href]) => <li key={href}>
+            {href.endsWith("/cart.html") && cartCount > 0
+              ? <a href={href} className="nav-cart-link" aria-label={`${label}, ${cartCount} ${cartCount === 1 ? "item" : "items"}`}>
+                {label}<span className="nav-cart-count" aria-hidden="true">{cartCount}</span></a>
+              : <a href={href}>{label}</a>}
+          </li>)}
           <li><span className="nav-session-status" role="status" aria-live="polite">{message}</span></li>
           <li>{session ? <button type="button" className="nav-logout" disabled={busy} onClick={logout}>Sign Out</button> : <a className="nav-auth nav-login" href="/views/customer/login.html">Sign In</a>}</li>
           {admin && <li><a className="nav-back" href="/views/customer/index.html">← Customer View</a></li>}

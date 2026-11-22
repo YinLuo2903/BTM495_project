@@ -52,6 +52,10 @@ export function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+// Pinned to en-CA so the symbol is "$" (not "CA$") whatever the browser's locale.
+const CAD = new Intl.NumberFormat("en-CA", { style: "currency", currency: "CAD" });
+
+/** Prices are in Canadian dollars: 54.5 → "$54.50 CAD". */
 export function formatAmount(amount: number): string {
-  return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(amount);
+  return `${CAD.format(amount)} CAD`;
 }

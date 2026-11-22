@@ -114,16 +114,17 @@ describe("customer pages", () => {
 
   it("filters inventory by name and category", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => response({ items: [
-      { item_id: 1, name: "Chain", price: 5, brand: "Acme", category: "Parts" },
-      { item_id: 2, name: "Pump", price: 9, brand: "Acme", category: "Tools" },
+      { item_id: 1, name: "Chain", price: 5, brand: "Acme", category: "Parts", stock_quantity: 3 },
+      { item_id: 2, name: "Pump", price: 9, brand: "Acme", category: "Tools", stock_quantity: 3 },
     ] })));
     render(<CustomerPage page="items" />);
     await screen.findByRole("link", { name: "Chain" });
-    fireEvent.change(screen.getByLabelText("Category"), { target: { value: "Tools" } });
+    const search = screen.getByLabelText("Search items by name or category");
+    fireEvent.change(search, { target: { value: "tools" } });
     expect(screen.queryByRole("link", { name: "Chain" })).toBeNull();
     expect(screen.getByRole("link", { name: "Pump" }).getAttribute("href")).toBe("item.html?id=2");
-    fireEvent.change(screen.getByLabelText("Search by name or brand"), { target: { value: "chain" } });
-    expect(screen.getByText("No items found.")).toBeTruthy();
+    fireEvent.change(search, { target: { value: "acme" } }); // brand is not searched
+    expect(screen.getByRole("heading", { name: "No items found" })).toBeTruthy();
   });
 
   it("shows login progress and errors while preventing repeat submission", async () => {

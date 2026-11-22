@@ -43,14 +43,17 @@ describe("customer widgets", () => {
     expect(await screen.findByText("Events unavailable.")).toBeTruthy();
   });
 
-  it("renders item detail from the URL and disables add to cart", async () => {
+  it("renders item detail from the URL with a working Add to Cart", async () => {
     window.history.replaceState({}, "", "/views/customer/item.html?id=1");
     mockResponse({ status: "ok", items: [item] });
     render(<CustomerPage page="item" />);
-    expect(await screen.findByRole("heading", { name: "Chain" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "Chain" })).toBeTruthy();
     expect(screen.getByText("Bike chain")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Add to cart" }).matches(":disabled")).toBe(true);
-    expect(screen.getByRole("link", { name: "Back to items" }).getAttribute("href")).toBe("items.html");
+    expect(screen.getByText("$5.00 CAD")).toBeTruthy();
+    expect(screen.getByText("Only 3 left")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Add to Cart, Chain" }).matches(":disabled")).toBe(false);
+    expect(screen.getByRole("link", { name: "← Back to items" }).getAttribute("href")).toBe("items.html");
+    expect(screen.getByRole("link", { name: "View shopping cart" }).getAttribute("href")).toBe("cart.html");
   });
 
   it.each([
@@ -67,8 +70,8 @@ describe("customer widgets", () => {
   it("shows inventory failures", async () => {
     mockResponse({ status: "error", message: "Inventory unavailable." }, false);
     render(<CustomerPage page="items" />);
-    expect(await screen.findByText("Inventory unavailable.")).toBeTruthy();
-    expect(screen.queryByText("No items found.")).toBeNull();
+    expect((await screen.findByRole("alert")).textContent).toBe("Could not load items: Inventory unavailable.");
+    expect(screen.queryByRole("heading", { name: "No items found" })).toBeNull();
   });
 
   it("renders the appointment booking page with Continue disabled until a slot is chosen", async () => {
@@ -80,7 +83,6 @@ describe("customer widgets", () => {
   });
 
   it.each([
-    ["cart", "Checkout"],
     ["checkout", "Confirm order"],
   ])("keeps unavailable %s actions disabled", (page, button) => {
     render(<CustomerPage page={page} />);

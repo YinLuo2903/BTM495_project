@@ -45,5 +45,8 @@
 /* 12c. Appointments Page (booking steps + calendar; builds on events.css) */
 @import url("./appointments.css");
 
+/* 12d. Items List Page (search, list rows, pagination, cart feedback; builds on events.css) */
+@import url("./items.css");
+
 /* 13. Responsive Design */
 @import url("./responsive.css");

@@ -3,6 +3,7 @@ import os
 import re
 import socket
 import sqlite3
+import threading
 import time
 from datetime import datetime
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -11,6 +12,8 @@ from urllib.parse import parse_qs, urlsplit
 
 from backend.apis.appointment_booking_api import AppointmentBookingAPI
 from backend.apis.event_registration_api import EventRegistrationAPI
+from backend.apis.inventory_list_api import InventoryList
+from backend.apis.shopping_cart_api import ShoppingCartAPI
 from backend.apis.local_website_extra_api import handle_route, is_extra_route
 from backend.apis.profile_api import ManageProfile
 from backend.models.customer import Customer
@@ -280,7 +283,12 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
         if urlsplit(self.path).path in FRONTEND_PAGES and not (FRONTEND_BUILD_DIR / "index.html").is_file():
             self.send_error(503, "Frontend build missing; run npm ci and npm run build in frontend.")
             return
-        if self._extra_route("GET") or self._my_events("GET") or self._appointments("GET"):
+        if (
+            self._extra_route("GET")
+            or self._my_events("GET")
+            or self._appointments("GET")
+            or self._my_cart("GET")
+        ):
             return
         request_path = urlsplit(self.path).path
         if request_path == "/api/session":
@@ -397,7 +405,12 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
         self._send_json({"status": "ok"}, 200)
 
     def do_POST(self) -> None:
-        if self._extra_route("POST") or self._my_events("POST") or self._appointments("POST"):
+        if (
+            self._extra_route("POST")
+            or self._my_events("POST")
+            or self._appointments("POST")
+            or self._my_cart("POST")
+        ):
             return
         request_path = urlsplit(self.path).path
         if request_path == "/api/sample-orders":
@@ -763,6 +776,122 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
             conflict = isinstance(result.data, dict) and result.data.get("conflict") is True
             status = 409 if conflict else 400
             self._send_json({"status": "error", "message": result.msg}, status)
+        return True
+
+    MAX_CART_ADD_QUANTITY = 99
+    # ShoppingCartAPI loads and saves a cart in separate transactions, and the server
+    # handles requests on parallel threads; serialize cart updates so two concurrent
+    # adds (e.g. from two tabs) cannot both read the old cart and lose one update.
+    _CART_LOCK = threading.Lock()
+
+    @staticmethod
+    def _cart_summary(cart) -> dict[str, object]:
+        """Cart lines for the shopping cart page, the total, and the nav badge count."""
+        items = [
+            {
+                "item_id": item_id,
+                "name": cart_item.item.name,
+                "category": cart_item.item.category,
+                # Price saved when the item was added (ShoppingCartAPI stores it).
+                "price": cart_item.item.getPrice(),
+                "quantity": cart_item.quantity,
+                "subtotal": round(cart_item.getSubtotal(), 2),
+                "stock_quantity": cart_item.item.stockQuantity,
+            }
+            for item_id, cart_item in cart.items.items()
+        ]
+        return {
+            "items": items,
+            "count": sum(entry["quantity"] for entry in items),
+            "total": round(cart.calculateTotal(), 2),
+        }
+
+    def _my_cart(self, method: str) -> bool:
+        """Serve the signed-in customer's cart; return False when the path is not /api/my-cart.
+
+        GET returns the cart summary. POST {item_id, quantity?} adds to it, refusing
+        any quantity that would take the cart above the item's stock.
+        """
+        if urlsplit(self.path).path != "/api/my-cart":
+            return False
+        if method not in ("GET", "POST"):
+            self._send_json({"status": "error", "message": "Not found."}, 404)
+            return True
+        customer_id = self._session_customer_id(
+            "Sign in with a customer account to use your cart."
+        )
+        if customer_id is None:
+            return True
+        payload: dict = {}
+        if method == "POST":
+            try:
+                payload = read_json_object(
+                    self, self.MAX_REQUEST_BYTES, request_name="Cart"
+                )
+            except HTTPRequestError as error:
+                self._send_json(
+                    {"status": "error", "message": str(error)}, error.status_code
+                )
+                return True
+            item_id = payload.get("item_id")
+            quantity = payload.get("quantity", 1)
+            if type(item_id) is not int or item_id <= 0:
+                self._send_json(
+                    {"status": "error", "message": "item_id must be a positive whole number."}, 400
+                )
+                return True
+            if type(quantity) is not int or not 1 <= quantity <= self.MAX_CART_ADD_QUANTITY:
+                self._send_json(
+                    {
+                        "status": "error",
+                        "message": f"quantity must be a whole number from 1 to {self.MAX_CART_ADD_QUANTITY}.",
+                    },
+                    400,
+                )
+                return True
+        try:
+            with self._CART_LOCK:
+                carts = ShoppingCartAPI(DB_PATH)
+                cart = carts.loadCart(customer_id)
+                if method == "GET":
+                    self._send_json({"status": "ok", **self._cart_summary(cart)}, 200)
+                    return True
+                found = InventoryList(DB_PATH).findItem(item_id)
+                if not found.success:
+                    self._send_json({"status": "error", "message": "Item not found."}, 404)
+                    return True
+                item = found.data
+                in_cart = cart.items[item_id].quantity if item_id in cart.items else 0
+                result = carts.addItem(cart, item, quantity)
+        except (sqlite3.Error, ValueError, RuntimeError):
+            logger.exception("Could not update cart for customer %s", customer_id)
+            self._send_json({"status": "error", "message": "Could not update your cart."}, 500)
+            return True
+        if not result.success:
+            stock = item.stockQuantity
+            if stock is not None and stock <= 0:
+                message = f"{item.name} is out of stock."
+            elif stock is not None:
+                message = (
+                    f"Your cart already has {in_cart} of {item.name}; only {stock} in stock."
+                )
+            else:
+                message = result.msg
+            # 409: the request conflicts with current stock, not a malformed request.
+            self._send_json(
+                {"status": "error", "message": message, **self._cart_summary(cart)}, 409
+            )
+            return True
+        logger.info("Customer %s added item %s x%s to cart", customer_id, item_id, quantity)
+        self._send_json(
+            {
+                "status": "ok",
+                "message": f"{item.name} added to your cart.",
+                "item_id": item_id,
+                **self._cart_summary(cart),
+            },
+            200,
+        )
         return True
 
     def _my_events(self, method: str) -> bool:

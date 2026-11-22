@@ -1,10 +1,18 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { announceCart, fetchCart } from "../services/cart";
 import { signOut, watchSession, type Session } from "../services/session";
 import { Layout } from "./Layout";
 
 vi.mock("../services/session", () => ({ signOut: vi.fn(), watchSession: vi.fn() }));
+vi.mock("../services/cart", async importOriginal => ({ ...await importOriginal<typeof import("../services/cart")>(), fetchCart: vi.fn() }));
+
+const line = (item_id: number, quantity: number) => ({ item_id, name: `Item ${item_id}`, category: "", price: 10, quantity, subtotal: 10 * quantity, stock_quantity: null });
+
+beforeEach(() => {
+  vi.mocked(fetchCart).mockResolvedValue({ items: [], count: 0, total: 0 });
+});
 
 afterEach(() => {
   cleanup();
@@ -42,6 +50,31 @@ describe("shared layout", () => {
     act(() => update(null, new Error("session unavailable")));
     expect(screen.getByRole("status").textContent).toBe("Session unavailable: session unavailable");
     expect(screen.getByRole("link", { name: "Sign In" })).toBeTruthy();
+  });
+
+  it("shows the signed-in customer's cart count and keeps it current", async () => {
+    let update!: (session: Session | null, error: Error | null) => void;
+    vi.mocked(watchSession).mockImplementation(callback => { update = callback; return () => {}; });
+    vi.mocked(fetchCart).mockResolvedValue({ items: [line(1, 2)], count: 2, total: 20 });
+    render(<Layout admin={false}><main /></Layout>);
+    expect(screen.getByRole("link", { name: "Shopping Cart" })).toBeTruthy(); // guest: no badge
+    expect(fetchCart).not.toHaveBeenCalled();
+
+    act(() => update({ user: { name: "Pat", is_admin: false }, expiresAt: 123 }, null));
+    expect((await screen.findByRole("link", { name: "Shopping Cart, 2 items" })).getAttribute("href")).toBe("/views/customer/cart.html");
+    act(() => announceCart({ items: [line(1, 3)], count: 3, total: 30 }));
+    expect(screen.getByRole("link", { name: "Shopping Cart, 3 items" }).textContent).toBe("Shopping Cart3");
+
+    act(() => update(null, null)); // signed out: badge goes away
+    expect(screen.getByRole("link", { name: "Shopping Cart" })).toBeTruthy();
+  });
+
+  it("does not load a cart for admins", () => {
+    let update!: (session: Session | null, error: Error | null) => void;
+    vi.mocked(watchSession).mockImplementation(callback => { update = callback; return () => {}; });
+    render(<Layout admin={false}><main /></Layout>);
+    act(() => update({ user: { name: "Ada", is_admin: true }, expiresAt: 123 }, null));
+    expect(fetchCart).not.toHaveBeenCalled();
   });
 
   it("disables sign out while the request is pending", async () => {

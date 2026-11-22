@@ -25,7 +25,9 @@ describe("API helper", () => {
   });
 
   it("formats amounts and unknown errors", () => {
-    expect(formatAmount(12.5)).toMatch(/12\.50/);
+    expect(formatAmount(12.5)).toBe("$12.50 CAD");
+    expect(formatAmount(2199)).toBe("$2,199.00 CAD");
+    expect(formatAmount(0)).toBe("$0.00 CAD");
     expect(errorMessage(new Error("oops"))).toBe("oops");
     expect(errorMessage("oops")).toBe("oops");
   });
