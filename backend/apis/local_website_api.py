@@ -58,6 +58,9 @@ FRONTEND_PAGES = {
 }
 LOCAL_DEMO_LOGIN_EMAIL = "login@example.com"
 LOCAL_DEMO_LOGIN_PASSWORD = "1234"
+# Matches database/Mockdata/admin.csv.
+LOCAL_ADMIN_LOGIN_EMAIL = "admin@lpvr.com"
+LOCAL_ADMIN_LOGIN_PASSWORD = "123456789"
 logger = get_logger(__name__)
 
 
@@ -65,36 +68,68 @@ def _database() -> SQLiteQuery:
     return SQLiteQuery(DB_PATH)
 
 
-def ensure_local_demo_login(database_path: str | Path = DB_PATH) -> None:
+def _ensure_login(
+    database_path: str | Path,
+    table: str,
+    email: str,
+    password: str,
+    values: dict[str, object],
+    label: str,
+) -> None:
+    """Create a fixed local account unless it already signs in with its password."""
     profile = ManageProfile(database_path)
-    if profile.login(LOCAL_DEMO_LOGIN_EMAIL, LOCAL_DEMO_LOGIN_PASSWORD) is not None:
+    if profile.login(email, password) is not None:
         return
 
     with SQLiteQuery(database_path).transaction(immediate=True) as session:
-        for table in (DatabaseTables.ADMIN, DatabaseTables.CUSTOMER):
+        for role_table in (DatabaseTables.ADMIN, DatabaseTables.CUSTOMER):
             existing = session.select_one(
-                table,
+                role_table,
                 (DatabaseColumns.EMAIL,),
-                where=(SQLCondition(DatabaseColumns.EMAIL, LOCAL_DEMO_LOGIN_EMAIL),),
+                where=(SQLCondition(DatabaseColumns.EMAIL, email),),
             )
             if existing is not None:
                 raise RuntimeError(
-                    f"Cannot create the local demo login because "
-                    f"{LOCAL_DEMO_LOGIN_EMAIL} is already in use."
+                    f"Cannot create the {label} because {email} is already in use."
                 )
 
-        # Keep the short smoke-test password hashed without weakening account policy.
+        # Store the password hashed, the same way createAccount does.
         session.insert(
-            DatabaseTables.CUSTOMER,
+            table,
             {
-                DatabaseColumns.FIRST_NAME: "Local",
-                DatabaseColumns.LAST_NAME: "Dry-Run",
-                DatabaseColumns.EMAIL: LOCAL_DEMO_LOGIN_EMAIL,
-                DatabaseColumns.PASSWORD_HASH: profile._hashPassword(
-                    LOCAL_DEMO_LOGIN_PASSWORD
-                ),
+                **values,
+                DatabaseColumns.EMAIL: email,
+                DatabaseColumns.PASSWORD_HASH: profile._hashPassword(password),
             },
         )
+
+
+def ensure_local_demo_login(database_path: str | Path = DB_PATH) -> None:
+    # Keep the short smoke-test password hashed without weakening account policy.
+    _ensure_login(
+        database_path,
+        DatabaseTables.CUSTOMER,
+        LOCAL_DEMO_LOGIN_EMAIL,
+        LOCAL_DEMO_LOGIN_PASSWORD,
+        {DatabaseColumns.FIRST_NAME: "Local", DatabaseColumns.LAST_NAME: "Dry-Run"},
+        "local demo login",
+    )
+
+
+def ensure_local_admin_login(database_path: str | Path = DB_PATH) -> None:
+    """Make sure the shop admin (admin@lpvr.com) exists so it can open the dashboard."""
+    _ensure_login(
+        database_path,
+        DatabaseTables.ADMIN,
+        LOCAL_ADMIN_LOGIN_EMAIL,
+        LOCAL_ADMIN_LOGIN_PASSWORD,
+        {
+            DatabaseColumns.NAME: "Admin",
+            DatabaseColumns.PHONE: "514-123-4567",
+            DatabaseColumns.ADDRESS: "7141 Rue Sherbrooke O PS 145, Montréal, QC H4B 2B9",
+        },
+        "local admin login",
+    )
 
 
 def _get_table_status(database: SQLiteSession) -> list[dict[str, object]]:

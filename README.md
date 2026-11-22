@@ -58,6 +58,7 @@ running and, in a second terminal, run `npm run dev` in `frontend`, then open
 | Section on the page | What to try |
 | --- | --- |
 | Profile login | Sign in with `login@example.com` / `1234`. |
+| Admin login | On the customer Sign In page, use `admin@lpvr.com` / `123456789` to open the admin dashboard. The start script creates this admin if it is missing. |
 | Database structure | See all tables and row counts. `status` has 3 rows: Pending, Completed, Cancelled. Click **Refresh data** to reload. |
 | Orders | Click **Make a payment** to create a $50 sample order. Use the edit and delete icons on a row, or **Remove all orders**. |
 | Mock credit card | The form is prefilled with a valid test card. Click **Review payment** and confirm. Any other card number is declined. |

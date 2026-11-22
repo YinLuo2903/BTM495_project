@@ -1,7 +1,11 @@
 import argparse
 import webbrowser
 
-from backend.apis.local_website_api import create_server, ensure_local_demo_login
+from backend.apis.local_website_api import (
+    create_server,
+    ensure_local_admin_login,
+    ensure_local_demo_login,
+)
 from backend.utils.logger import configure_backend_logging, get_logger
 from database.sqlite_database import initialize_database
 
@@ -34,6 +38,8 @@ def main() -> None:
         logger.info("Database initialization complete.")
         ensure_local_demo_login()
         logger.info("Local demo login is ready (login@example.com).")
+        ensure_local_admin_login()
+        logger.info("Admin login is ready (admin@lpvr.com).")
 
         logger.info("Starting HTTP server on %s:%d.", args.host, args.port)
         try:

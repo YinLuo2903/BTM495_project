@@ -18,7 +18,11 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from backend.apis.appointment_booking_api import OPEN_WEEKDAYS
-from backend.apis.local_website_api import create_server, ensure_local_demo_login
+from backend.apis.local_website_api import (
+    create_server,
+    ensure_local_admin_login,
+    ensure_local_demo_login,
+)
 from backend.apis.profile_api import ManageProfile
 from backend.apis.session_api import SESSION_LIFETIME_SECONDS
 from backend.apis.shopping_cart_api import ShoppingCartAPI
@@ -280,6 +284,45 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
 
         self.assertIsNotNone(
             profile.login("login@example.com", "existing-password")
+        )
+
+    def test_local_admin_login_is_created_idempotently_and_signs_in_as_admin(self) -> None:
+        ensure_local_admin_login(self.database_path)
+        ensure_local_admin_login(self.database_path)
+
+        user = ManageProfile(self.database_path).login("admin@lpvr.com", "123456789")
+        self.assertIsInstance(user, Admin)
+        assert user is not None
+        self.assertEqual(user.name, "Admin")
+        self.assertEqual(user.phone, "514-123-4567")
+        self.assertEqual(user.address, "7141 Rue Sherbrooke O PS 145, Montréal, QC H4B 2B9")
+
+        with closing(sqlite3.connect(self.database_path)) as connection:
+            self.assertEqual(
+                connection.execute(
+                    "SELECT COUNT(*) FROM admin WHERE email = ?", ("admin@lpvr.com",)
+                ).fetchone()[0],
+                1,
+            )
+
+        # The login page uses is_admin to send this account to the admin dashboard.
+        with self._post_login({"email": "admin@lpvr.com", "password": "123456789"}) as response:
+            self.assertEqual(response.status, 200)
+            payload = json.load(response)
+        self.assertEqual(payload["user"], {"name": "Admin", "is_admin": True})
+
+    def test_local_admin_login_does_not_replace_existing_account(self) -> None:
+        profile = ManageProfile(self.database_path)
+        profile.createAccount(
+            Customer(first_name="Taken", last_name="Email", email="admin@lpvr.com"),
+            "existing-password",
+        )
+
+        with self.assertRaisesRegex(RuntimeError, "already in use"):
+            ensure_local_admin_login(self.database_path)
+
+        self.assertIsInstance(
+            profile.login("admin@lpvr.com", "existing-password"), Customer
         )
 
     def test_login_endpoint_rejects_incorrect_credentials(self) -> None:

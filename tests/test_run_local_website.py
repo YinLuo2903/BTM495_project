@@ -27,6 +27,7 @@ class RunLocalWebsiteTests(unittest.TestCase):
             ),
             patch("run_local_website.initialize_database") as initialize_database,
             patch("run_local_website.ensure_local_demo_login") as ensure_demo_login,
+            patch("run_local_website.ensure_local_admin_login") as ensure_admin_login,
             patch("run_local_website.create_server", return_value=server),
             self.assertLogs("backend.run_local_website", level="INFO") as logs,
         ):
@@ -34,7 +35,9 @@ class RunLocalWebsiteTests(unittest.TestCase):
 
         initialize_database.assert_called_once_with()
         ensure_demo_login.assert_called_once_with()
+        ensure_admin_login.assert_called_once_with()
         output = "\n".join(logs.output)
+        self.assertIn("Admin login is ready (admin@lpvr.com).", output)
         self.assertIn("Starting local integration server.", output)
         self.assertIn("Initializing SQLite database schema.", output)
         self.assertIn("Database initialization complete.", output)
