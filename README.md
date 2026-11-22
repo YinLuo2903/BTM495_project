@@ -1,6 +1,6 @@
 # BTM 495 Project: Online Bike Shop Website
 
-A full-stack bike shop in one command: online checkout, credit card payments, live inventory, events, and a rock-solid SQLite database.
+A full-stack bike shop website: online ordering, process payment with credit card, manage inventory/repair appointments/events, and SQLite database. The platform porvides a centralized database and a admin dashboard to streamline business operation.
 
 ```mermaid
 flowchart LR
