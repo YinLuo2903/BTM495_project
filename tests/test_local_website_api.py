@@ -858,6 +858,56 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
         )
         self.assertEqual((body["count"], body["total"]), (7, 4598.0))
 
+    def test_customer_updates_quantity_and_removes_cart_lines(self) -> None:
+        with closing(sqlite3.connect(self.database_path)) as connection:
+            connection.executemany(
+                "INSERT INTO item (item_id, name, price) VALUES (?, ?, ?)",
+                [(1, "Road Bike", 2199.0), (2, "Brake Pads", 24.95)],
+            )
+            connection.execute("INSERT INTO inventory (item_id, quantity) VALUES (1, 4)")
+            connection.commit()
+        self.assertEqual(self._auth_json("PATCH", "/api/my-cart/1", "", {"quantity": 2})[0], 401)
+        self.assertEqual(self._auth_json("DELETE", "/api/my-cart/1", "")[0], 401)
+        self._json(
+            "POST",
+            "/api/signup",
+            {
+                "first_name": "Jamie",
+                "last_name": "Rivera",
+                "email": "jamie@example.com",
+                "phone": "514-555-0123",
+                "address": "12 Rue Sherbrooke O, Montreal",
+                "password": "secret-pass",
+            },
+        )
+        token = self._json(
+            "POST", "/api/login", {"email": "jamie@example.com", "password": "secret-pass"}
+        )[1]["token"]
+        self._auth_json("POST", "/api/my-cart", token, {"item_id": 1})
+        self._auth_json("POST", "/api/my-cart", token, {"item_id": 2})
+
+        status, body = self._auth_json("PATCH", "/api/my-cart/1", token, {"quantity": 4})
+        self.assertEqual((status, body["message"]), (200, "Road Bike quantity updated to 4."))
+        self.assertEqual((body["count"], body["total"]), (5, 8820.95))
+
+        # Above the stock of 4: refused and the cart is unchanged.
+        status, body = self._auth_json("PATCH", "/api/my-cart/1", token, {"quantity": 5})
+        self.assertEqual((status, body["message"], body["count"]), (409, "You already have the maximum available quantity of Road Bike.", 5))
+
+        for bad in ({"quantity": 0}, {"quantity": "2"}, {}):
+            expected = 200 if bad == {} else 400  # quantity defaults to 1
+            self.assertEqual(self._auth_json("PATCH", "/api/my-cart/2", token, bad)[0], expected, bad)
+        self.assertEqual(self._auth_json("PATCH", "/api/my-cart/99", token, {"quantity": 1})[0], 404)
+        self.assertEqual(self._auth_json("PATCH", "/api/my-cart/abc", token, {"quantity": 1})[0], 404)
+        self.assertEqual(self._auth_json("GET", "/api/my-cart/1", token)[0], 404)
+
+        status, body = self._auth_json("DELETE", "/api/my-cart/1", token)
+        self.assertEqual((status, body["message"]), (200, "Road Bike removed from your cart."))
+        self.assertEqual([line["item_id"] for line in body["items"]], [2])
+        self.assertEqual((body["count"], body["total"]), (1, 24.95))
+        self.assertEqual(self._auth_json("DELETE", "/api/my-cart/1", token)[0], 404)
+        self.assertEqual(self._auth_json("GET", "/api/my-cart", token, None)[1]["count"], 1)
+
     def test_concurrent_cart_adds_are_all_kept(self) -> None:
         with closing(sqlite3.connect(self.database_path)) as connection:
             connection.execute("INSERT INTO item (item_id, name, price) VALUES (1, 'Tune-up', 40.0)")

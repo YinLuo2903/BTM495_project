@@ -528,6 +528,146 @@
 
 .it-cart-summary .it-add {
   width: 100%;
+  height: 48px;
+}
+
+.customer-content .it-cart-summary .it-checkout {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.customer-content .it-cart-summary .it-checkout:hover {
+  background: var(--brand-dark);
+}
+
+/* Select all bar + per-line checkbox. forms.css styles every .customer-content input
+   as a full-width text field, so reset checkboxes here. */
+.it-select-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--background);
+}
+
+/* .it-page prefix: forms.css styles every .customer-content label as a block with
+   margins and 13px text, which would otherwise override this flex row. */
+.it-page .it-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  cursor: pointer;
+}
+
+.it-select-label {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.it-page input[type="checkbox"] {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--brand);
+  cursor: pointer;
+}
+
+.it-cart-row {
+  gap: 16px;
+}
+
+/* Unselected lines stay readable but recede. */
+.it-cart-row-off .it-thumb,
+.it-cart-row-off .it-info,
+.it-cart-row-off .it-line-total {
+  opacity: 0.55;
+}
+
+.it-line-total {
+  min-width: 140px;
+  text-align: right;
+}
+
+/* Quantity stepper: − / value / + */
+.it-stepper {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  overflow: hidden;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.it-page .it-stepper button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  min-height: 0;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: var(--ink);
+  background: transparent;
+  cursor: pointer;
+}
+
+.it-page .it-stepper button:hover:not(:disabled) {
+  background: var(--background);
+  box-shadow: none;
+  transform: none;
+}
+
+.it-page .it-stepper button:disabled {
+  color: var(--muted);
+  background: transparent;
+  opacity: 0.4;
+  cursor: default;
+}
+
+.it-stepper output {
+  min-width: 36px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.it-page .it-remove {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--muted);
+  background: transparent;
+  font: inherit;
+  font-size: var(--font-small);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.it-page .it-remove:hover:not(:disabled) {
+  color: var(--ev-danger);
+  background: var(--background);
+  box-shadow: none;
+  transform: none;
+}
+
+.it-page .it-remove:disabled {
+  background: transparent;
+  opacity: 0.5;
+  cursor: default;
 }
 
 .it-small {

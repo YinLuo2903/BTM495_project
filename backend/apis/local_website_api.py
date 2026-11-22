@@ -306,7 +306,7 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
         super().do_GET()
 
     def do_DELETE(self) -> None:
-        if self._extra_route("DELETE") or self._my_events("DELETE"):
+        if self._extra_route("DELETE") or self._my_events("DELETE") or self._my_cart("DELETE"):
             return
         resource, record_id = self._record_route()
         if resource is None:
@@ -315,7 +315,7 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
         self._modify_records(resource, record_id, None)
 
     def do_PATCH(self) -> None:
-        if self._extra_route("PATCH"):
+        if self._extra_route("PATCH") or self._my_cart("PATCH"):
             return
         if urlsplit(self.path).path == "/api/profile":
             self._update_profile()
@@ -806,49 +806,55 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
             "total": round(cart.calculateTotal(), 2),
         }
 
-    def _my_cart(self, method: str) -> bool:
-        """Serve the signed-in customer's cart; return False when the path is not /api/my-cart.
+    def _cart_error(self, message: str, status: int, cart=None) -> bool:
+        body: dict[str, object] = {"status": "error", "message": message}
+        if cart is not None:
+            body.update(self._cart_summary(cart))
+        self._send_json(body, status)
+        return True
 
-        GET returns the cart summary. POST {item_id, quantity?} adds to it, refusing
-        any quantity that would take the cart above the item's stock.
+    def _my_cart(self, method: str) -> bool:
+        """Serve the signed-in customer's cart; return False for any other path.
+
+        GET    /api/my-cart              cart summary
+        POST   /api/my-cart              {item_id, quantity?} add to the cart
+        PATCH  /api/my-cart/<item_id>    {quantity} set a line's quantity
+        DELETE /api/my-cart/<item_id>    remove a line
+        Quantities can never exceed the item's stock.
         """
-        if urlsplit(self.path).path != "/api/my-cart":
+        parts = urlsplit(self.path).path.split("/")
+        if parts[:3] != ["", "api", "my-cart"] or len(parts) > 4:
             return False
-        if method not in ("GET", "POST"):
-            self._send_json({"status": "error", "message": "Not found."}, 404)
-            return True
+        line_id: int | None = None
+        if len(parts) == 4:
+            line_id = int(parts[3]) if parts[3].isdigit() and int(parts[3]) > 0 else None
+            if line_id is None or method not in ("PATCH", "DELETE"):
+                return self._cart_error("Not found.", 404)
+        elif method not in ("GET", "POST"):
+            return self._cart_error("Not found.", 404)
         customer_id = self._session_customer_id(
             "Sign in with a customer account to use your cart."
         )
         if customer_id is None:
             return True
+
         payload: dict = {}
-        if method == "POST":
+        if method in ("POST", "PATCH"):
             try:
-                payload = read_json_object(
-                    self, self.MAX_REQUEST_BYTES, request_name="Cart"
-                )
+                payload = read_json_object(self, self.MAX_REQUEST_BYTES, request_name="Cart")
             except HTTPRequestError as error:
-                self._send_json(
-                    {"status": "error", "message": str(error)}, error.status_code
-                )
-                return True
-            item_id = payload.get("item_id")
-            quantity = payload.get("quantity", 1)
-            if type(item_id) is not int or item_id <= 0:
-                self._send_json(
-                    {"status": "error", "message": "item_id must be a positive whole number."}, 400
-                )
-                return True
-            if type(quantity) is not int or not 1 <= quantity <= self.MAX_CART_ADD_QUANTITY:
-                self._send_json(
-                    {
-                        "status": "error",
-                        "message": f"quantity must be a whole number from 1 to {self.MAX_CART_ADD_QUANTITY}.",
-                    },
-                    400,
-                )
-                return True
+                return self._cart_error(str(error), error.status_code)
+        item_id = line_id if line_id is not None else payload.get("item_id")
+        quantity = payload.get("quantity", 1)
+        if method == "POST" and (type(item_id) is not int or item_id <= 0):
+            return self._cart_error("item_id must be a positive whole number.", 400)
+        if method in ("POST", "PATCH") and (
+            type(quantity) is not int or not 1 <= quantity <= self.MAX_CART_ADD_QUANTITY
+        ):
+            return self._cart_error(
+                f"quantity must be a whole number from 1 to {self.MAX_CART_ADD_QUANTITY}.", 400
+            )
+
         try:
             with self._CART_LOCK:
                 carts = ShoppingCartAPI(DB_PATH)
@@ -856,40 +862,49 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
                 if method == "GET":
                     self._send_json({"status": "ok", **self._cart_summary(cart)}, 200)
                     return True
-                found = InventoryList(DB_PATH).findItem(item_id)
-                if not found.success:
-                    self._send_json({"status": "error", "message": "Item not found."}, 404)
-                    return True
-                item = found.data
-                in_cart = cart.items[item_id].quantity if item_id in cart.items else 0
-                result = carts.addItem(cart, item, quantity)
+                if method in ("PATCH", "DELETE"):
+                    if item_id not in cart.items:
+                        return self._cart_error("That item is not in your cart.", 404, cart)
+                    item = cart.items[item_id].item  # loaded with current stock
+                    in_cart = cart.items[item_id].quantity
+                    result = (
+                        carts.removeItem(cart, item_id)
+                        if method == "DELETE"
+                        else carts.updateQuantity(cart, item_id, quantity)
+                    )
+                else:
+                    found = InventoryList(DB_PATH).findItem(item_id)
+                    if not found.success:
+                        return self._cart_error("Item not found.", 404)
+                    item = found.data
+                    in_cart = cart.items[item_id].quantity if item_id in cart.items else 0
+                    result = carts.addItem(cart, item, quantity)
         except (sqlite3.Error, ValueError, RuntimeError):
             logger.exception("Could not update cart for customer %s", customer_id)
-            self._send_json({"status": "error", "message": "Could not update your cart."}, 500)
-            return True
+            return self._cart_error("Could not update your cart.", 500)
+
         if not result.success:
             stock = item.stockQuantity
             if stock is not None and stock <= 0:
                 message = f"{item.name} is out of stock."
+            elif stock is not None and method == "PATCH":
+                # The shopping cart does not reveal remaining stock.
+                message = f"You already have the maximum available quantity of {item.name}."
             elif stock is not None:
-                message = (
-                    f"Your cart already has {in_cart} of {item.name}; only {stock} in stock."
-                )
+                message = f"Your cart already has {in_cart} of {item.name}; only {stock} in stock."
             else:
                 message = result.msg
             # 409: the request conflicts with current stock, not a malformed request.
-            self._send_json(
-                {"status": "error", "message": message, **self._cart_summary(cart)}, 409
-            )
-            return True
-        logger.info("Customer %s added item %s x%s to cart", customer_id, item_id, quantity)
+            return self._cart_error(message, 409, cart)
+
+        message = {
+            "POST": f"{item.name} added to your cart.",
+            "PATCH": f"{item.name} quantity updated to {quantity}.",
+            "DELETE": f"{item.name} removed from your cart.",
+        }[method]
+        logger.info("Customer %s cart %s item %s", customer_id, method, item_id)
         self._send_json(
-            {
-                "status": "ok",
-                "message": f"{item.name} added to your cart.",
-                "item_id": item_id,
-                **self._cart_summary(cart),
-            },
+            {"status": "ok", "message": message, "item_id": item_id, **self._cart_summary(cart)},
             200,
         )
         return True

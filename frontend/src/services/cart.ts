@@ -42,6 +42,45 @@ export async function addToCart(itemId: number, quantity = 1): Promise<CartSumma
   return result;
 }
 
+/** Set a cart line's quantity; throws SessionApiError (409 above stock, 404 not in cart). */
+export async function updateCartQuantity(itemId: number, quantity: number): Promise<CartSummary & { message: string }> {
+  const result = await sessionApi<CartSummary & { message: string }>(`/api/my-cart/${itemId}`, "PATCH", { quantity });
+  announceCart(result);
+  return result;
+}
+
+/** Remove a cart line; throws SessionApiError (404 when it is not in the cart). */
+export async function removeFromCart(itemId: number): Promise<CartSummary & { message: string }> {
+  const result = await sessionApi<CartSummary & { message: string }>(`/api/my-cart/${itemId}`, "DELETE");
+  announceCart(result);
+  return result;
+}
+
+const UNSELECTED_KEY = "lpvr.cart.unselected";
+
+/**
+ * Item ids the customer unticked in the shopping cart. Unselected (rather than
+ * selected) ids are stored so newly added items start out selected. Browser-only:
+ * storage may be unavailable, in which case everything counts as selected.
+ */
+export function readUnselected(): Set<number> {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(UNSELECTED_KEY) ?? "[]");
+    return new Set(Array.isArray(value) ? value.filter((id): id is number => Number.isSafeInteger(id)) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+export function saveUnselected(ids: Set<number>): void {
+  try {
+    if (ids.size) localStorage.setItem(UNSELECTED_KEY, JSON.stringify([...ids]));
+    else localStorage.removeItem(UNSELECTED_KEY);
+  } catch {
+    // Selection is a convenience; keep working without storage.
+  }
+}
+
 /** Map of item_id → quantity already in the cart. */
 export function quantities(summary: CartSummary): Record<number, number> {
   return Object.fromEntries(summary.items.map(line => [line.item_id, line.quantity]));
