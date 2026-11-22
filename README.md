@@ -45,36 +45,13 @@ macOS / Linux:
 bash start.sh
 ```
 
-Press `Ctrl+C` to stop. Add `--no-browser` to skip opening the browser. If the
-lockfile changes, delete `frontend/node_modules` (or run `npm ci` in
-`frontend`) before the next start.
+## Running the Application
 
-Optional, for hot reload while editing the frontend: keep the start script
-running and, in a second terminal, run `npm run dev` in `frontend`, then open
-`http://localhost:5173/` instead.
+1. Run the start script to launch the application.
+2. The website will automatically open in your browser.
+3. Press `Ctrl + C` in the terminal to stop the application.
 
 **Step 3. Try the features in the browser**
-
-**As a customer**
-
-| What to do | How |
-| --- | --- |
-| Sign in | Click **Sign In** and use `login@example.com` / `1234`. |
-| Shop | Open **Items**, add items to the **Shopping Cart**, then check out. |
-| Join an event | Open **Events** and register for an event. |
-| Book a repair | Open **Appointments** and book a repair appointment. |
-| Update your details | Once signed in, click your name to open **My Profile** and edit your details. |
-| Create an account | New customers click **Create account** at the top of the home page. |
-
-**As an admin**
-
-| What to do | How |
-| --- | --- |
-| Sign in | Click **Sign In** and use `admin@lpvr.com` / `123456789`. The admin dashboard opens. |
-| See accounts and the schedule | **Customers** lists every registered account. **Dashboard** shows this week's events and appointments. |
-| Manage the shop | Create, view, update and delete **Events**, **Appointments** and **Inventory**. |
-
-No real payment is made and card details are never stored.
 
 ### Where to find each part
 
@@ -88,7 +65,32 @@ Customers and the admin share one **Sign In** page: customers land on the home
 page, the admin lands on the dashboard. You stay signed in for 24 hours or
 until you click **Sign Out**. Admin accounts can't be created from the website.
 
+**As a customer**
 
+| What to do | How |
+| --- | --- |
+| Create an account | New customers click **Create account** at the top of the home page. |
+| Sign in | Click **Sign In** and use `login@example.com` / `1234`. |
+| Shop | Open **Items** to browse or search for products, add items to the **Shopping Cart**, and proceed to checkout and payment. |
+| Join an event | Open **Events** to view upcoming events and register for an event. |
+| Book a repair | Open **Appointments**, select an available time slot, describe the bike issue, and confirm the booking. |
+| Update profile| Once signed in, click your name to open **My Profile** and edit your personal information. |
+
+
+**As an admin**
+
+ What to do | How |
+| --- | --- |
+| Sign in | Click **Sign In** and use `admin@lpvr.com` / `123456789`. The admin dashboard opens automatically. |
+| dashboard | The **Dashboard** shows an overview of shop activities, including upcoming events and appointments. |
+| customers | Open **Customers** to view registered customer accounts and their information. |
+| events | Open **Events** to create, view, update, or delete events. |
+| appointments | Open **Appointments** to view, create, update, or delete repair bookings. |
+| orders | Open **Orders** to view customer orders, including purchased items, order details, and status. |
+| payments | Open **Payments** to view payment records, including amounts, payment methods, and payment status. |
+| inventory | Open **Items** to add, view, update, or delete shop items and their details. |
+
+No real payment is made and card details are never stored.
 
 ## Contribution
 Except for repo admins, everyone else needs to work on a local branch and open a PR.
