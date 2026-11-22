@@ -1,11 +1,11 @@
 event_id,admin_id,location,name,description,eventDateTime,participantLimit,statusID
 1,1,"Parc Jean-Drapeau, Montreal",Fall Group Ride,Scenic 30 km group ride for all skill levels,2026-10-04 09:00:00,40,2
-2,2,Bike Shop Workshop Area,Basic Bike Maintenance Class,Learn to fix flats and adjust brakes and gears,2026-10-11 13:00:00,15,2
+2,1,Bike Shop Workshop Area,Basic Bike Maintenance Class,Learn to fix flats and adjust brakes and gears,2026-10-11 13:00:00,15,2
 3,1,"Mont-Royal Park, Montreal",Mountain Bike Skills Clinic,Hands-on training for climbing and descending trails,2026-10-18 10:00:00,20,2
-4,2,Bike Shop Showroom,Helmet Safety Day,Free helmet fit checks and safety tips,2026-10-25 11:00:00,30,2
+4,1,Bike Shop Showroom,Helmet Safety Day,Free helmet fit checks and safety tips,2026-10-25 11:00:00,30,2
 5,1,"Lachine Canal, Montreal",Halloween Costume Ride,Casual evening ride along the canal in costume,2026-10-31 18:00:00,50,3
-6,2,Bike Shop Workshop Area,Winter Bike Prep Workshop,Prepare your bike for cold weather and icy roads,2026-11-21 13:00:00,15,1
+6,1,Bike Shop Workshop Area,Winter Bike Prep Workshop,Prepare your bike for cold weather and icy roads,2026-11-21 13:00:00,15,1
 7,1,Bike Shop Showroom,Black Friday Sale Event,Special discounts on bikes and accessories,2026-11-27 09:00:00,100,1
-8,2,"Parc La Fontaine, Montreal",Family Bike Day,Relaxed family ride with games and refreshments,2026-12-05 10:00:00,35,1
+8,1,"Parc La Fontaine, Montreal",Family Bike Day,Relaxed family ride with games and refreshments,2026-12-05 10:00:00,35,1
 9,1,Bike Shop Workshop Area,Tire and Tube Replacement Class,Step-by-step tubeless and standard tire changes,2026-12-12 14:00:00,12,1
-10,2,"Vieux-Port, Montreal",New Year Kickoff Ride,Winter fat bike ride to start the year,2027-01-09 10:00:00,25,1
+10,1,"Vieux-Port, Montreal",New Year Kickoff Ride,Winter fat bike ride to start the year,2027-01-09 10:00:00,25,1

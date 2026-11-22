@@ -1,3 +1,2 @@
 admin_id,name,email,phone,address,password_hash
-1,Marc Tremblay,marc.tremblay@bikeshop.com,514-555-0101,"123 Rue Saint-Denis, Montreal, QC H2X 3K8",hash_admin_marc_001
-2,Sophie Gagnon,sophie.gagnon@bikeshop.com,514-555-0102,"456 Avenue du Parc, Montreal, QC H2V 4E7",hash_admin_sophie_002
+1,Admin,admin@lpvr.com,514-123-4567,"7141 Rue Sherbrooke O PS 145, Montréal, QC H4B 2B9",pbkdf2_sha256$600000$YYK6aIpHASO+8eHOigfnHw==$sRCGP+jmR8eSMRhc9XQ6HASUtyml5WDZeBrIOUCeawU=
