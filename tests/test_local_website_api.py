@@ -908,6 +908,108 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
         self.assertEqual(self._auth_json("DELETE", "/api/my-cart/1", token)[0], 404)
         self.assertEqual(self._auth_json("GET", "/api/my-cart", token, None)[1]["count"], 1)
 
+    def test_customer_pays_for_selected_cart_items(self) -> None:
+        with closing(sqlite3.connect(self.database_path)) as connection:
+            connection.executemany(
+                "INSERT INTO item (item_id, name, price) VALUES (?, ?, ?)",
+                [(1, "Road Bike", 2199.0), (2, "Brake Pads", 24.95), (3, "Helmet", 79.95)],
+            )
+            connection.executemany(
+                "INSERT INTO inventory (item_id, quantity) VALUES (?, ?)", [(1, 4), (2, 50), (3, 35)]
+            )
+            connection.commit()
+        approved = {"cardholder_name": "Jamie Rivera", "card_number": "4242424242424242", "expiration_date": "12/99", "cvv": "123"}
+        self.assertEqual(
+            self._auth_json("POST", "/api/my-checkout", "", {"item_ids": [1], **approved})[0], 401
+        )
+        self._json(
+            "POST",
+            "/api/signup",
+            {
+                "first_name": "Jamie",
+                "last_name": "Rivera",
+                "email": "jamie@example.com",
+                "phone": "514-555-0123",
+                "address": "12 Rue Sherbrooke O, Montreal",
+                "password": "secret-pass",
+            },
+        )
+        token = self._json(
+            "POST", "/api/login", {"email": "jamie@example.com", "password": "secret-pass"}
+        )[1]["token"]
+        self._auth_json("POST", "/api/my-cart", token, {"item_id": 1})
+        self._auth_json("POST", "/api/my-cart", token, {"item_id": 2, "quantity": 2})
+        self._auth_json("POST", "/api/my-cart", token, {"item_id": 3})
+
+        status, body = self._auth_json(
+            "POST", "/api/my-checkout", token,
+            {"item_ids": [1], "cardholder_name": "J", "card_number": "4242", "expiration_date": "13/30", "cvv": "12"},
+        )
+        self.assertEqual(status, 400)
+        self.assertEqual(set(body["errors"]), {"cardholder_name", "card_number", "expiration_date", "cvv"})
+        for name in ("", "  ", "4242 Jamie", "-Jamie", None, "x" * 51):
+            status, body = self._auth_json(
+                "POST", "/api/my-checkout", token, {"item_ids": [1], **approved, "cardholder_name": name}
+            )
+            self.assertEqual(
+                (status, body["errors"]),
+                (400, {"cardholder_name": "Enter the name as it appears on the card."}),
+                name,
+            )
+        status, body = self._auth_json(
+            "POST", "/api/my-checkout", token, {"item_ids": [1], **approved, "expiration_date": "01/20"}
+        )
+        self.assertEqual((status, body["errors"]), (400, {"expiration_date": "This card has expired."}))
+        for bad_ids in ([], "1", [0], [99]):
+            expected = 409 if bad_ids == [99] else 400
+            self.assertEqual(
+                self._auth_json("POST", "/api/my-checkout", token, {"item_ids": bad_ids, **approved})[0],
+                expected,
+                bad_ids,
+            )
+
+        # A well-formed card the mock gateway declines: no order is created.
+        status, body = self._auth_json(
+            "POST", "/api/my-checkout", token, {"item_ids": [1, 2], **approved, "card_number": "4000000000000002"}
+        )
+        self.assertEqual(status, 402)
+        self.assertEqual(body["message"], "Payment declined. Check your card details or use a different card.")
+        self.assertEqual(self._count("orders"), 1)  # only the fixture order
+
+        status, body = self._auth_json("POST", "/api/my-checkout", token, {"item_ids": [1, 2], **approved})
+        self.assertEqual(status, 200)
+        self.assertEqual(body["message"], "Payment successful")
+        order = body["order"]
+        self.assertEqual((order["total"], order["card_last4"]), (2248.9, "4242"))
+        # The unselected helmet stays in the cart.
+        self.assertEqual([line["item_id"] for line in body["items"]], [3])
+        self.assertEqual((body["count"], body["total"]), (1, 79.95))
+
+        with closing(sqlite3.connect(self.database_path)) as connection:
+            self.assertEqual(
+                connection.execute(
+                    "SELECT item_id, quantity, unit_price FROM order_item WHERE order_id = ? ORDER BY item_id",
+                    (order["order_id"],),
+                ).fetchall(),
+                [(1, 1, 2199.0), (2, 2, 24.95)],
+            )
+            self.assertEqual(
+                connection.execute(
+                    "SELECT amount, paymentMethod, statusID FROM payment WHERE order_id = ?",
+                    (order["order_id"],),
+                ).fetchall(),
+                [(2248.9, "Credit Card", 2)],
+            )
+            self.assertEqual(
+                dict(connection.execute("SELECT item_id, quantity FROM inventory").fetchall()),
+                {1: 3, 2: 48, 3: 35},
+            )
+        self.assertEqual(self._auth_json("GET", "/api/my-cart", token)[1]["count"], 1)
+        # The dashboard counts the order as paid.
+        _, dashboard = self._json("GET", "/api/dashboard")
+        paid = {row["order_id"]: row["paid"] for row in dashboard["orders"]}
+        self.assertTrue(paid[order["order_id"]])
+
     def test_concurrent_cart_adds_are_all_kept(self) -> None:
         with closing(sqlite3.connect(self.database_path)) as connection:
             connection.execute("INSERT INTO item (item_id, name, price) VALUES (1, 'Tune-up', 40.0)")

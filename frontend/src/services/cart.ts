@@ -56,6 +56,25 @@ export async function removeFromCart(itemId: number): Promise<CartSummary & { me
   return result;
 }
 
+export interface PaidOrder {
+  order_id: number;
+  total: number;
+  /** "YYYY-MM-DD HH:MM:SS" */
+  paid_at: string;
+  card_last4: string;
+}
+
+/**
+ * Pay for the selected cart lines with the mock card gateway. On success the
+ * paid lines leave the cart (announced to the nav). Throws SessionApiError:
+ * 400 invalid card details, 402 declined, 409 the cart changed.
+ */
+export async function payForItems(itemIds: number[], card: { cardholder_name: string; card_number: string; expiration_date: string; cvv: string }): Promise<PaidOrder> {
+  const result = await sessionApi<CartSummary & { order: PaidOrder }>("/api/my-checkout", "POST", { item_ids: itemIds, ...card });
+  announceCart(result);
+  return result.order;
+}
+
 const UNSELECTED_KEY = "lpvr.cart.unselected";
 
 /**

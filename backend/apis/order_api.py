@@ -90,3 +90,104 @@ class OrderService:
         order.placeOrder()
         cart._completeCheckout(order)
         return Response.ok("Order placed successfully.", order)
+
+    def checkoutSelected(
+        self,
+        cart: ShoppingCart,
+        customerID: int,
+        itemIds: list[int],
+        paymentMethod: str,
+    ) -> Response:
+        """Order only the selected cart lines and record their approved payment.
+
+        One transaction creates the order and its items, takes the stock, stores
+        a completed payment, and saves the unselected lines back to the cart.
+        The caller approves the payment first, so a declined card never creates
+        an order. On success `data` is {"order_id", "total", "paid_at"}.
+        """
+        if cart.customerID != customerID:
+            raise ValueError("Shopping cart does not belong to this customer.")
+        selected = list(dict.fromkeys(itemIds))
+        if not selected:
+            return Response.warning("Select at least one item to check out.")
+        if any(item_id not in cart.items for item_id in selected):
+            return Response.warning("Some selected items are no longer in your cart.")
+
+        # Sum in cents so the stored total matches the lines exactly.
+        total_amount = sum(
+            round(cart.items[item_id].getSubtotal() * 100) for item_id in selected
+        ) / 100
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        remaining = ShoppingCart(customerID)
+        remaining.items = {
+            item_id: cart_item
+            for item_id, cart_item in cart.items.items()
+            if item_id not in selected
+        }
+
+        with self.database.transaction(immediate=True) as database:
+            ShoppingCartAPI.verifyInTransaction(database, cart)
+            stock_before: dict[int, int | None] = {}
+            for item_id in selected:
+                stock = InventoryList.stockOf(database, item_id)
+                if stock is not None and cart.items[item_id].quantity > stock:
+                    database.rollback()
+                    name = cart.items[item_id].item.name
+                    return Response.warning(
+                        f"{name} is no longer available in that quantity. Update your cart and try again."
+                    )
+                stock_before[item_id] = stock
+
+            order_id = database.insert(
+                DatabaseTables.ORDERS,
+                {
+                    DatabaseColumns.CUSTOMER_ID: customerID,
+                    DatabaseColumns.ORDER_DATE_TIME: now,
+                    DatabaseColumns.TOTAL_AMOUNT: total_amount,
+                    DatabaseColumns.STATUS_ID: DatabaseValues.ORDER_STATUS_ID_PENDING,
+                },
+            ).lastrowid
+            for item_id in selected:
+                cart_item = cart.items[item_id]
+                database.insert(
+                    DatabaseTables.ORDER_ITEM,
+                    {
+                        DatabaseColumns.ORDER_ID: order_id,
+                        DatabaseColumns.ITEM_ID: item_id,
+                        DatabaseColumns.QUANTITY: cart_item.quantity,
+                        DatabaseColumns.UNIT_PRICE: cart_item.item.getPrice(),
+                    },
+                )
+                stock = stock_before[item_id]
+                if stock is not None and not InventoryList.setQuantityInTransaction(
+                    database,
+                    item_id,
+                    stock - cart_item.quantity,
+                    reason=f"Checkout order {order_id}",
+                ):
+                    database.rollback()
+                    return Response.warning("Item out of stock.")
+            database.insert(
+                DatabaseTables.PAYMENT,
+                {
+                    DatabaseColumns.ORDER_ID: order_id,
+                    DatabaseColumns.PAYMENT_DATE_TIME: now,
+                    DatabaseColumns.AMOUNT: total_amount,
+                    DatabaseColumns.PAYMENT_METHOD: paymentMethod,
+                    DatabaseColumns.PAYMENT_STATUS_ID: DatabaseValues.PAYMENT_STATUS_ID_PAID,
+                },
+            )
+            database.update(
+                DatabaseTables.SHOPPING_CART,
+                {
+                    DatabaseColumns.ITEMS_JSON: ShoppingCartAPI.serializeItems(remaining),
+                    DatabaseColumns.UPDATED_AT: now,
+                },
+                where=(SQLCondition(DatabaseColumns.CUSTOMER_ID, customerID),),
+            )
+
+        cart.items = remaining.items
+        return Response.ok(
+            "Order placed successfully.",
+            {"order_id": order_id, "total": total_amount, "paid_at": now},
+        )

@@ -3,6 +3,7 @@ import { sessionApi, signIn } from "../../services/session";
 import { api, errorMessage, type CustomerProfile, type ShopEvent } from "../../services/api";
 import { AppointmentsPage } from "./AppointmentsPage";
 import { CartPage } from "./CartPage";
+import { CheckoutPage } from "./CheckoutPage";
 import { EventsPage } from "./EventsPage";
 import { ItemDetailPage } from "./ItemDetailPage";
 import { ItemsPage } from "./ItemsPage";
@@ -241,7 +242,7 @@ export function CustomerPage({ page }: { page: string }) {
     case "item": content = <ItemDetailPage />; break;
     case "events": content = <EventsPage />; break;
     case "cart": content = <CartPage />; break;
-    case "checkout": content = <Card><h2>Review your order</h2><p className="customer-notice">Customer checkout is not available yet. The local demo supports mock credit-card payments only.</p><form><fieldset disabled><label htmlFor="payment-method">Payment method</label><select id="payment-method"><option>Credit card</option><option>Debit card</option></select><p><button>Confirm order</button></p></fieldset></form></Card>; break;
+    case "checkout": content = <CheckoutPage />; break;
     case "orders": content = <Card><h2>Order history</h2><p className="customer-notice">Personal order history, statuses, and details require customer sessions and are not available yet.</p></Card>; break;
     case "appointments": content = <AppointmentsPage />; break;
     default: content = <Card><h1>Page not found</h1></Card>;

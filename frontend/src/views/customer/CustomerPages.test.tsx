@@ -82,13 +82,6 @@ describe("customer widgets", () => {
     await screen.findByText("Choose an available date on the calendar to see open times.");
   });
 
-  it.each([
-    ["checkout", "Confirm order"],
-  ])("keeps unavailable %s actions disabled", (page, button) => {
-    render(<CustomerPage page={page} />);
-    expect(screen.getByRole("button", { name: button }).matches(":disabled")).toBe(true);
-  });
-
   it("shows unavailable order history", () => {
     render(<CustomerPage page="orders" />);
     expect(screen.getByText(/Personal order history/)).toBeTruthy();

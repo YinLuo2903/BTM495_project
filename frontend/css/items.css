@@ -681,6 +681,269 @@
   font-weight: 600;
 }
 
+/* ---- Checkout / payment (checkout.html) ---- */
+
+.it-pay {
+  display: grid;
+  flex: 3 1 560px;
+  gap: 16px;
+  padding: 28px;
+}
+
+.it-pay h2 {
+  margin: 0;
+  font-size: 19px;
+}
+
+.it-pay form {
+  display: grid;
+  gap: 16px;
+}
+
+.it-demo-note {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--ev-tint);
+  font-size: var(--font-small);
+}
+
+.it-pay-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.it-field {
+  display: grid;
+  gap: 6px;
+}
+
+/* forms.css styles .customer-content label/input generically; match the LPVR fields. */
+.it-page .it-field label {
+  display: block;
+  margin: 0;
+  font-size: var(--font-small);
+  font-weight: 600;
+}
+
+.it-page .it-field input {
+  min-height: 0;
+  height: 48px;
+  margin: 0;
+  padding: 0 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  background: var(--surface);
+  font-size: var(--font-body);
+  letter-spacing: 0.02em;
+}
+
+.it-page .it-field input:focus {
+  border-color: var(--brand);
+  outline: none;
+  box-shadow: 0 0 0 1px var(--brand);
+}
+
+.it-page .it-field input[aria-invalid="true"] {
+  border-color: var(--ev-danger);
+}
+
+.it-field-error {
+  color: var(--ev-danger);
+  font-size: var(--font-small);
+  font-weight: 600;
+}
+
+.it-pay-submit {
+  width: 100%;
+  height: 52px;
+  font-size: 17px;
+}
+
+.it-summary-lines {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0 0 16px;
+  border-bottom: 1px solid var(--line);
+  list-style: none;
+}
+
+.it-summary-lines li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-weight: 600;
+}
+
+.it-summary-lines li > span:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.it-summary-name {
+  font-weight: 600;
+}
+
+/* Payment successful */
+.it-paid {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 48px 32px;
+  text-align: center;
+}
+
+.it-paid-mark {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--ev-success);
+}
+
+.it-paid h1 {
+  margin: 0;
+  font-size: 30px;
+}
+
+.it-paid > p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.it-paid-details {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  margin: 12px 0;
+  padding: 16px 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  text-align: left;
+}
+
+.it-paid-details div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.it-paid-details dt {
+  color: var(--muted);
+}
+
+.it-paid-details dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.it-paid .it-detail-actions {
+  justify-content: center;
+}
+
+.customer-content .it-paid .it-link-button {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+/* ---- Checkout progress: 1 Shopping Cart — 2 Payment (CheckoutSteps.tsx) ----
+   Same marks as the appointment steps (.ap-steps): active = orange, done = ink + check. */
+
+.it-steps-nav {
+  display: flex;
+  justify-content: center;
+  margin: -8px 0 28px;
+}
+
+.it-steps {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.it-step {
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* Connector line between the two steps. */
+.it-step:not(:last-child)::after {
+  width: 120px;
+  height: 2px;
+  margin: 0 16px;
+  border-radius: 2px;
+  background: #e0e0e0;
+  content: "";
+}
+
+.it-step-complete:not(:last-child)::after {
+  background: var(--ink);
+}
+
+.it-step-body {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.customer-content a.it-step-body {
+  color: inherit;
+  text-decoration: none;
+}
+
+.customer-content a.it-step-body:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--brand-dark);
+}
+
+.it-step-mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 30px;
+  height: 30px;
+  border: 1.5px solid #cfcfcf;
+  border-radius: 50%;
+  background: var(--surface);
+  font-weight: 700;
+}
+
+.it-step-active {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.it-step-active .it-step-mark {
+  border-color: var(--brand);
+  color: var(--ink);
+  background: var(--brand);
+}
+
+.it-step-complete {
+  color: var(--ink);
+}
+
+.it-step-complete .it-step-mark {
+  border-color: var(--ink);
+  color: #fff;
+  background: var(--ink);
+}
+
 /* ---- Nav cart count (Layout.tsx) ---- */
 
 .nav-cart-link {

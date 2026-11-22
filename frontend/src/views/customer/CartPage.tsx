@@ -6,6 +6,7 @@ import {
 } from "../../services/cart";
 import { SessionApiError } from "../../services/session";
 import { CartToast, ItemImage, type Toast } from "./addToCart";
+import { CheckoutSteps } from "./CheckoutSteps";
 
 const TOAST_MS = 3500;
 
@@ -108,6 +109,7 @@ export function CartPage() {
       <h1>Shopping Cart</h1>
       <p>Review the items you have added before checkout.</p>
     </header>
+    <CheckoutSteps current={1} />
 
     {state.kind === "loading" ? <section className="ev-card it-detail-notice"><p role="status">Loading your shopping cart…</p></section>
     : state.kind === "guest" ? <section className="ev-card it-empty">

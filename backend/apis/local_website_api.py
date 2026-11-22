@@ -5,7 +5,8 @@ import socket
 import sqlite3
 import threading
 import time
-from datetime import datetime
+import calendar
+from datetime import date, datetime
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
@@ -13,12 +14,13 @@ from urllib.parse import parse_qs, urlsplit
 from backend.apis.appointment_booking_api import AppointmentBookingAPI
 from backend.apis.event_registration_api import EventRegistrationAPI
 from backend.apis.inventory_list_api import InventoryList
+from backend.apis.order_api import OrderService
 from backend.apis.shopping_cart_api import ShoppingCartAPI
 from backend.apis.local_website_extra_api import handle_route, is_extra_route
 from backend.apis.profile_api import ManageProfile
 from backend.models.customer import Customer
 from backend.apis.session_api import SessionManager
-from backend.models.payment import Payment, PaymentMethod, PaymentStatus
+from backend.models.payment import Payment, PaymentGateway, PaymentMethod, PaymentStatus
 from backend.utils.constants import DatabaseColumns, DatabaseTables, DatabaseValues
 from backend.utils.http import HTTPRequestError, read_json_object, send_json
 from backend.utils.logger import (
@@ -34,7 +36,12 @@ from backend.utils.sqlite import (
     SQLOrder,
     SQLSortDirection,
 )
-from backend.utils.validators import string_value
+from backend.utils.validators import (
+    is_valid_card_number,
+    is_valid_cvv,
+    is_valid_expiration_date,
+    string_value,
+)
 from database.sqlite_database import DB_PATH
 
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
@@ -410,6 +417,7 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
             or self._my_events("POST")
             or self._appointments("POST")
             or self._my_cart("POST")
+            or self._my_checkout("POST")
         ):
             return
         request_path = urlsplit(self.path).path
@@ -905,6 +913,108 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
         logger.info("Customer %s cart %s item %s", customer_id, method, item_id)
         self._send_json(
             {"status": "ok", "message": message, "item_id": item_id, **self._cart_summary(cart)},
+            200,
+        )
+        return True
+
+    MAX_CHECKOUT_LINES = 100
+
+    @staticmethod
+    def card_errors(
+        cardholder_name: object,
+        card_number: object,
+        expiration: object,
+        cvv: object,
+        today: date | None = None,
+    ) -> dict[str, str]:
+        """Format problems with mock credit-card details, keyed by field; empty when all are valid."""
+        errors: dict[str, str] = {}
+        name = cardholder_name.strip() if isinstance(cardholder_name, str) else ""
+        # 2-50 letters (any language), spaces, hyphens, apostrophes and periods,
+        # starting with a letter; matches isValidCardholderName() in the frontend.
+        if not (
+            2 <= len(name) <= 50
+            and name[0].isalpha()
+            and all(char.isalpha() or char in " '.-" for char in name)
+        ):
+            errors["cardholder_name"] = "Enter the name as it appears on the card."
+        if not is_valid_card_number(card_number):
+            errors["card_number"] = "Enter the 16-digit card number."
+        if not is_valid_expiration_date(expiration):
+            errors["expiration_date"] = "Enter the expiry date as MM/YY."
+        else:
+            month, year = map(int, str(expiration).split("/"))
+            last_day = date(2000 + year, month, calendar.monthrange(2000 + year, month)[1])
+            if last_day < (today or date.today()):
+                errors["expiration_date"] = "This card has expired."
+        if not is_valid_cvv(cvv):
+            errors["cvv"] = "Enter the 3-digit CVC."
+        return errors
+
+    def _my_checkout(self, method: str) -> bool:
+        """POST /api/my-checkout {item_ids, cardholder_name, card_number, expiration_date, cvv}.
+
+        Pays for the selected cart lines with the mock card gateway. The card is
+        approved before anything is written, so a declined card creates no order;
+        an approved one creates the order, takes the stock, records the payment
+        and leaves unselected lines in the cart. Card details are never logged.
+        """
+        if urlsplit(self.path).path != "/api/my-checkout":
+            return False
+        if method != "POST":
+            return self._cart_error("Not found.", 404)
+        customer_id = self._session_customer_id(
+            "Sign in with a customer account to check out."
+        )
+        if customer_id is None:
+            return True
+        try:
+            payload = read_json_object(self, self.MAX_REQUEST_BYTES, request_name="Checkout")
+        except HTTPRequestError as error:
+            return self._cart_error(str(error), error.status_code)
+
+        item_ids = payload.get("item_ids")
+        if (
+            not isinstance(item_ids, list)
+            or not 1 <= len(item_ids) <= self.MAX_CHECKOUT_LINES
+            or any(type(item_id) is not int or item_id <= 0 for item_id in item_ids)
+        ):
+            return self._cart_error("Select at least one item to check out.", 400)
+        card_number = payload.get("card_number")
+        expiration = payload.get("expiration_date")
+        cvv = payload.get("cvv")
+        errors = self.card_errors(payload.get("cardholder_name"), card_number, expiration, cvv)
+        if errors:
+            self._send_json(
+                {"status": "error", "message": "Check your card details.", "errors": errors}, 400
+            )
+            return True
+        if not PaymentGateway().validatePayment(card_number, expiration, cvv):
+            logger.info("Mock card declined for customer %s", customer_id)
+            return self._cart_error(
+                "Payment declined. Check your card details or use a different card.", 402
+            )
+
+        try:
+            with self._CART_LOCK:
+                cart = ShoppingCartAPI(DB_PATH).loadCart(customer_id)
+                result = OrderService(DB_PATH).checkoutSelected(
+                    cart, customer_id, item_ids, PaymentMethod.CREDIT_CARD.value
+                )
+        except (sqlite3.Error, ValueError, RuntimeError):
+            logger.exception("Checkout failed for customer %s", customer_id)
+            return self._cart_error("Could not complete your order. You have not been charged.", 500)
+        if not result.success:
+            return self._cart_error(result.msg, 409, cart)
+        order = result.data
+        logger.info("Customer %s paid order %s", customer_id, order["order_id"])
+        self._send_json(
+            {
+                "status": "ok",
+                "message": "Payment successful",
+                "order": {**order, "card_last4": card_number[-4:]},
+                **self._cart_summary(cart),
+            },
             200,
         )
         return True
