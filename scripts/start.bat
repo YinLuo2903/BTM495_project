@@ -1,5 +1,6 @@
 @echo off
-cd /d "%~dp0"
+rem Developer setup: build the frontend and run the site from source (the repository root).
+cd /d "%~dp0.."
 
 if exist ".venv\Scripts\python.exe" (
     echo Environment already exists, skipping setup.

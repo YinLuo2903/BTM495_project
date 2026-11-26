@@ -56,7 +56,7 @@ admin pages, and the local demo's primary interactions.
 
 - Fresh database: stop the server, then delete `database/lpvr.db` (and
   `database/uploads/` to remove uploaded images).
-- Another port: `start.bat --port 8766` or `bash start.sh --port 8766`.
+- Another port: `bash scripts/start.sh --port 8766` (Windows: `scripts\start.bat --port 8766`).
 
 ## Project structure
 
@@ -75,8 +75,9 @@ admin pages, and the local demo's primary interactions.
 | `backend/utils/` | SQLite query builder and transactions, validation, logging, responses, table/column/status constants |
 | `database/` | `schema.sql` (tables), `sqlite_database.py` (creates and upgrades `lpvr.db`) |
 | `tests/` | Website tests; `tests/unitTests/` has the unit tests |
-| `start.bat` / `start.sh` | One-line setup and start |
-| `run_local_website.py` | Start the website |
+| `scripts/start.sh` / `scripts/start.bat` | Developer setup and start from source |
+| `run_local_website.py` | Start the website (also the entry point of the downloadable app) |
+| `packaging/`, `.github/workflows/release.yml` | Build the downloadable app and publish releases |
 
 Accounts: `createAccount` stores a PBKDF2 password hash, and `login` checks
 Admin and Customer accounts by email and password. Passwords must be at least

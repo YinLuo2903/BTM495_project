@@ -6,6 +6,7 @@ import sqlite3
 import threading
 import time
 import calendar
+import hmac
 from datetime import date, datetime
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -65,6 +66,7 @@ _IMAGE_TYPES = {
     "image/png": ("png", lambda head: head.startswith(b"\x89PNG\r\n\x1a\n")),
     "image/webp": ("webp", lambda head: head[:4] == b"RIFF" and head[8:12] == b"WEBP"),
 }
+SHUTDOWN_KEY_HEADER = "X-Shutdown-Key"
 LOCAL_DEMO_LOGIN_EMAIL = "login@example.com"
 LOCAL_DEMO_LOGIN_PASSWORD = "1234"
 # Matches database/Mockdata/admin.csv.
@@ -483,6 +485,9 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
         self._send_json({"status": "ok"}, 200)
 
     def do_POST(self) -> None:
+        if urlsplit(self.path).path == "/api/shutdown":
+            self._shutdown()
+            return
         if (
             self._extra_route("POST")
             or self._my_events("POST")
@@ -1380,6 +1385,17 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
     def _send_json(self, response: dict[str, object], status_code: int) -> None:
         send_json(self, response, status_code)
 
+    def _shutdown(self) -> None:
+        """Stop this server when a newer launch asks, proving it can read the key file."""
+        key = getattr(self.server, "shutdown_key", None)
+        given = self.headers.get(SHUTDOWN_KEY_HEADER, "")
+        if not key or not hmac.compare_digest(given, key):
+            self._send_json({"status": "error", "message": "Forbidden."}, 403)
+            return
+        self._send_json({"status": "ok"}, 200)
+        # shutdown() waits for serve_forever() to return, so it must run on another thread.
+        threading.Thread(target=self.server.shutdown, daemon=True).start()
+
 
 class ExclusivePortHTTPServer(ThreadingHTTPServer):
     """Refuse to share the port with another running server.
@@ -1389,6 +1405,8 @@ class ExclusivePortHTTPServer(ThreadingHTTPServer):
     """
 
     allow_reuse_address = os.name != "nt"
+    # Set by run_local_website.py; a newer launch sends it to /api/shutdown to take over the port.
+    shutdown_key: str | None = None
 
     def server_bind(self) -> None:
         if os.name == "nt" and hasattr(socket, "SO_EXCLUSIVEADDRUSE"):

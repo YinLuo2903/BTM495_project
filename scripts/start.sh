@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -e
-cd "$(dirname "$0")"
+# Developer setup: build the frontend and run the site from source (the repository root).
+cd "$(dirname "$0")/.."
 
 if [ -x ".venv/bin/python" ]; then
     echo "Environment already exists, skipping setup."

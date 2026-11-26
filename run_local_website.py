@@ -1,14 +1,19 @@
 import argparse
+import secrets
+import time
+import urllib.error
+import urllib.request
 import webbrowser
 
 from backend.apis.local_website_api import (
+    SHUTDOWN_KEY_HEADER,
     create_server,
     ensure_local_admin_login,
     ensure_local_demo_login,
 )
 from backend.utils.logger import configure_backend_logging, get_logger
 from database.load_mockdata import has_shop_data, load_mockdata
-from database.sqlite_database import initialize_database
+from database.sqlite_database import DATA_DIR, initialize_database
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
@@ -19,6 +24,36 @@ def open_browser(url: str) -> None:
     if not webbrowser.open(url):
         print("Could not open the default browser. Open this URL manually:")
         print(url)
+
+
+def key_file(port: int):
+    """Where the running server keeps the key that lets a newer launch stop it."""
+    return DATA_DIR / f"server-{port}.key"
+
+
+def take_over(host: str, port: int):
+    """Ask an earlier launch of this site on the port to stop, then start in its place.
+
+    Only a server that wrote our key file is asked; anything else on the port is left alone
+    and None is returned.
+    """
+    try:
+        key = key_file(port).read_text(encoding="utf-8").strip()
+        request = urllib.request.Request(
+            f"http://127.0.0.1:{port}/api/shutdown", method="POST", headers={SHUTDOWN_KEY_HEADER: key})
+        urllib.request.urlopen(request, timeout=3).close()
+    except urllib.error.HTTPError as refused:  # something else on the port, or the wrong key
+        refused.close()
+        return None
+    except (OSError, ValueError):  # no key file, or nothing answering
+        return None
+    logger.info("Stopped the earlier copy of the site on port %d.", port)
+    for _ in range(50):  # wait up to 5 s for the port to be released
+        try:
+            return create_server(host, port)
+        except OSError:
+            time.sleep(0.1)
+    return None
 
 
 def parse_args() -> argparse.Namespace:
@@ -60,12 +95,17 @@ def main() -> None:
         try:
             server = create_server(args.host, args.port)
         except OSError:
-            logger.error(
-                "Port %d is already in use. Stop the other server (or close its "
-                "terminal) or start with --port <another port>.",
-                args.port,
-            )
-            raise SystemExit(1)
+            server = take_over(args.host, args.port)
+            if server is None:
+                logger.error(
+                    "Port %d is already in use. Stop the other server (or close its "
+                    "terminal) or start with --port <another port>.",
+                    args.port,
+                )
+                raise SystemExit(1)
+        server.shutdown_key = secrets.token_urlsafe(32)
+        key_path = key_file(args.port)
+        key_path.write_text(server.shutdown_key, encoding="utf-8")
         with server:
             host, port = server.server_address[:2]
             display_host = "localhost" if host in ("127.0.0.1", "::1") else host
@@ -79,8 +119,13 @@ def main() -> None:
 
             try:
                 server.serve_forever()
+                logger.info("Server stopped: a newer copy of the site took over.")
             except KeyboardInterrupt:
                 logger.info("Server stopped by user.")
+            finally:
+                # Leave the key file if a newer launch has already replaced it with its own.
+                if key_path.exists() and key_path.read_text(encoding="utf-8") == server.shutdown_key:
+                    key_path.unlink()
     except Exception:
         logger.exception("Local integration server failed.")
         raise

@@ -6,6 +6,7 @@ __pycache__/
 # Local databases, uploaded images and logs
 *.db
 database/uploads/
+database/server-*.key
 *.log
 
 # Frontend dependencies and build output

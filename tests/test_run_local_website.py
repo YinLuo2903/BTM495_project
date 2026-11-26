@@ -1,4 +1,6 @@
 import sys
+import tempfile
+import threading
 import unittest
 from argparse import Namespace
 from pathlib import Path
@@ -7,9 +9,54 @@ from unittest.mock import MagicMock, patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import run_local_website
+from backend.apis.local_website_api import create_server
 
 
 class RunLocalWebsiteTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+
+    def _running_server(self, key: str, key_on_disk: str | None):
+        """A real server on a free port, as an earlier launch would leave it."""
+        server = create_server("127.0.0.1", 0)
+        server.shutdown_key = key
+        port = server.server_address[1]
+        key_path = Path(self.tmp.name) / f"server-{port}.key"
+        if key_on_disk is not None:
+            key_path.write_text(key_on_disk, encoding="utf-8")
+        def serve() -> None:  # like main(): stop serving, then release the port
+            with server:
+                server.serve_forever()
+
+        thread = threading.Thread(target=serve, daemon=True)
+        thread.start()
+        patcher = patch("run_local_website.key_file", return_value=key_path)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        return server, thread, port
+
+    def test_second_launch_stops_the_first_and_takes_its_port(self) -> None:
+        first, thread, port = self._running_server("secret", key_on_disk="secret")
+        second = run_local_website.take_over("127.0.0.1", port)
+        self.assertIsNotNone(second)
+        self.addCleanup(second.server_close)
+        thread.join(timeout=5)
+        self.assertFalse(thread.is_alive())  # the first server's serve_forever() returned
+        self.assertEqual(second.server_address[1], port)
+
+    def test_does_not_stop_a_server_without_the_right_key(self) -> None:
+        first, thread, port = self._running_server("secret", key_on_disk="guess")
+        self.assertIsNone(run_local_website.take_over("127.0.0.1", port))
+        self.assertTrue(thread.is_alive())
+        first.shutdown()
+
+    def test_leaves_the_port_alone_when_no_key_file_exists(self) -> None:
+        first, thread, port = self._running_server("secret", key_on_disk=None)
+        self.assertIsNone(run_local_website.take_over("127.0.0.1", port))
+        self.assertTrue(thread.is_alive())
+        first.shutdown()
+
     def test_main_logs_initialization_server_ready_and_shutdown(self) -> None:
         server = MagicMock()
         server.__enter__.return_value = server
@@ -32,6 +79,7 @@ class RunLocalWebsiteTests(unittest.TestCase):
             patch("run_local_website.ensure_local_demo_login") as ensure_demo_login,
             patch("run_local_website.ensure_local_admin_login") as ensure_admin_login,
             patch("run_local_website.create_server", return_value=server),
+            patch("run_local_website.key_file", return_value=Path(self.tmp.name) / "server.key"),
             self.assertLogs("backend.run_local_website", level="INFO") as logs,
         ):
             run_local_website.main()
@@ -67,6 +115,7 @@ class RunLocalWebsiteTests(unittest.TestCase):
             patch("run_local_website.ensure_local_demo_login", calls.ensure_demo_login),
             patch("run_local_website.ensure_local_admin_login"),
             patch("run_local_website.create_server", return_value=server),
+            patch("run_local_website.key_file", return_value=Path(self.tmp.name) / "server.key"),
             self.assertLogs("backend.run_local_website", level="INFO") as logs,
         ):
             calls.load_mockdata.return_value = {"item": 9, "orders": 9}

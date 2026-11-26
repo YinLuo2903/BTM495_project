@@ -25,44 +25,20 @@ opens in your browser at `http://localhost:8765/`, with sample data loaded. The 
 macOS and Linux programs have Python built in, so nothing else needs installing; the database and
 uploaded pictures are kept in a `LPVR Bike Shop` folder in your home folder.
 
-Maintainers: pushing a version tag (`git tag v1.0.0 && git push origin v1.0.0`) builds all
-downloads and publishes the release (see `.github/workflows/release.yml`).
+Opening it again while it is running replaces the running copy. Close its window to stop the site.
 
-## Quick start (from source)
+Maintainers: pushing a version tag (for example `git tag ver2.2 && git push origin ver2.2`) builds
+all downloads and publishes the release (see `.github/workflows/release.yml`).
 
-**Step 1. Clone the project**
+## Run from source (developers)
 
-```
-git clone https://github.com/YinLuo2903/BTM495_project.git
-cd BTM495_project
-```
+For working on the code. After cloning, `scripts/start.sh` (macOS / Linux) or
+`scripts\start.bat` (Windows) creates the Python environment, installs and builds
+the frontend, then starts the site the same way the downloads do. Requires
+Python 3.10+ and Node.js 20.19+ on 20.x, 22.12+ on 22.x, or 24+. When running
+from source, the database and uploads stay in `database/`.
 
-**Step 2. Run the start script (one line)**
-
-It creates the Python environment if needed, installs frontend dependencies on
-first run (`npm ci`), builds the React frontend (`npm run build`), then starts
-the Python server and opens `http://localhost:8765/`. Requires Python 3.10 or
-newer and npm with Node.js 20.19+ on 20.x, 22.12+ on 22.x, or 24+.
-
-Windows:
-
-```
-start.bat
-```
-
-macOS / Linux:
-
-```
-bash start.sh
-```
-
-## Running the Application
-
-1. Run the start script to launch the application.
-2. The website will automatically open in your browser.
-3. Press `Ctrl + C` in the terminal to stop the application.
-
-**Step 3. Try the features in the browser**
+## Try the features
 
 ### Where to find each part
 
