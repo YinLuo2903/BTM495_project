@@ -12,6 +12,8 @@ const MAX_SLIDES = 8;
 export function ProductShowcase() {
   const [items, setItems] = useState<Item[] | null>(null);
   const [index, setIndex] = useState(0);
+  // The slide that is sliding out, and which way: "next" moves left, "prev" moves right.
+  const [leaving, setLeaving] = useState<{ slide: number; dir: "next" | "prev" } | null>(null);
   // Always plays (no play/pause button). It holds while hovered, while a control has keyboard
   // focus, and for RESUME_MS after the visitor picks a slide. `picks` counts picks so each one
   // restarts the resume timer; 0 means not held.
@@ -31,8 +33,14 @@ export function ProductShowcase() {
 
   const count = items?.length ?? 0;
   const running = !picks && !hovered && !focused && count > 1;
+  const show = (next: number, dir: "next" | "prev") => {
+    const target = (next + count) % count;
+    if (target === index) return;
+    setLeaving({ slide: index, dir });
+    setIndex(target);
+  };
   // A visitor-chosen slide: show it and hold autoplay.
-  const go = (next: number) => { setIndex((next + count) % count); setPicks(n => n + 1); };
+  const go = (next: number) => { show(next, next < index ? "prev" : "next"); setPicks(n => n + 1); };
 
   useEffect(() => {
     if (!picks) return;
@@ -42,7 +50,7 @@ export function ProductShowcase() {
 
   useEffect(() => {
     if (!running) return;
-    const timer = setTimeout(() => setIndex(current => (current + 1) % count), SLIDE_MS);
+    const timer = setTimeout(() => show(index + 1, "next"), SLIDE_MS);
     return () => clearTimeout(timer);
   }, [running, index, count]);
 
@@ -74,7 +82,9 @@ export function ProductShowcase() {
       onPointerUp={onPointerUp} onPointerCancel={() => { swipeStart.current = null; }}>
       {items.map((item, slide) => {
         const active = slide === index;
-        return <div key={item.item_id} className={`sc-slide${active ? " is-active" : ""}`} role="group" aria-roledescription="slide"
+        const dir = leaving?.dir ?? "next";
+        const state = active ? ` is-active sc-from-${dir}` : leaving?.slide === slide ? ` is-leaving sc-to-${dir}` : "";
+        return <div key={item.item_id} className={`sc-slide${state}`} role="group" aria-roledescription="slide"
           aria-label={`${slide + 1} of ${count}: ${item.name}`} aria-hidden={!active} inert={!active}>
           <div className="sc-copy">
             <p className="sc-anim sc-meta">{[item.category, item.brand].filter(Boolean).join(" · ")}</p>

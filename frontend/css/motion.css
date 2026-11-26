@@ -1,0 +1,99 @@
+/* Hover motion used across the customer site, kept in one place so it stays consistent.
+ * With Reduce Motion on, responsive.css shortens every transition to near zero, so these
+ * become plain state changes. */
+
+:root {
+  --hover-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --hover-lift: 0 16px 34px rgb(0 0 0 / 10%);
+}
+
+/* Cards that lead somewhere lift a little. */
+.sections-grid > .card,
+.events-grid > li {
+  transition: transform 260ms var(--hover-ease), box-shadow 260ms var(--hover-ease), border-color 200ms ease;
+}
+
+.sections-grid > .card:hover,
+.events-grid > li:hover {
+  border-color: rgb(242 106 27 / 45%);
+  box-shadow: var(--hover-lift);
+  transform: translateY(-4px);
+}
+
+/* Banner photo drifts closer while the pointer is over the banner. */
+.photo-hero::before {
+  transition: transform 1400ms var(--hover-ease);
+}
+
+.photo-hero:hover::before {
+  transform: scale(1.04);
+}
+
+/* Text links: the underline grows in from the left and the arrow-like link nudges right. */
+.section-link,
+.events-link,
+.sc-more {
+  display: inline-block;
+  background: linear-gradient(currentcolor, currentcolor) left bottom / 0 2px no-repeat;
+  text-decoration: none;
+  transition: background-size 260ms var(--hover-ease), transform 260ms var(--hover-ease), color 160ms ease;
+}
+
+.section-link:hover,
+.events-link:hover,
+.sc-more:hover {
+  background-size: 100% 2px;
+  transform: translateX(3px);
+}
+
+.site-footer a {
+  transition: color 160ms ease;
+}
+
+/* Lists: rows tint and their picture zooms; event entries slide a step right. */
+.it-row {
+  transition: background-color 200ms ease;
+}
+
+.it-row:hover {
+  background: rgb(242 106 27 / 4%);
+}
+
+.it-thumb {
+  overflow: hidden;
+}
+
+.it-thumb-img {
+  transition: transform 400ms var(--hover-ease);
+}
+
+.it-row:hover .it-thumb-img {
+  transform: scale(1.08);
+}
+
+.ev-list-item {
+  transition: transform 200ms var(--hover-ease), border-color 160ms ease, background-color 160ms ease;
+}
+
+.ev-list-item:hover {
+  transform: translateX(4px);
+}
+
+tbody td {
+  transition: background-color 160ms ease;
+}
+
+/* Buttons already lift on hover (buttons.css); they also press in when clicked. */
+button:active:not(:disabled),
+.home-nav a.nav-signup:active {
+  transform: scale(0.97);
+}
+
+.it-add {
+  transition: background-color 160ms ease, transform 160ms var(--hover-ease), box-shadow 160ms ease;
+}
+
+.it-add:hover:not(:disabled) {
+  box-shadow: 0 8px 18px rgb(242 106 27 / 30%);
+  transform: translateY(-2px);
+}

@@ -1,5 +1,8 @@
 import argparse
+import os
 import secrets
+import subprocess
+import sys
 import time
 import urllib.error
 import urllib.request
@@ -54,6 +57,33 @@ def take_over(host: str, port: int):
         except OSError:
             time.sleep(0.1)
     return None
+
+
+def close_terminal_window() -> None:
+    """After a newer launch took over, close this copy's macOS Terminal window.
+
+    macOS Terminal keeps a window open after its program ends, so each replaced copy would
+    leave a "[Process completed]" window behind. A detached osascript closes it half a
+    second after we exit. Other systems close their console windows themselves.
+    """
+    if sys.platform != "darwin" or os.environ.get("TERM_PROGRAM") != "Apple_Terminal" or not sys.stdin.isatty():
+        return
+    tty = os.ttyname(sys.stdin.fileno())
+    # Only windows on our terminal that are no longer running anything: finished windows
+    # keep reporting the terminal they last used, and macOS reuses those names.
+    script = f"""
+        delay 0.5
+        tell application "Terminal"
+            repeat with w in (get windows)
+                try
+                    if tty of selected tab of w is "{tty}" and not (busy of selected tab of w) then close w
+                end try
+            end repeat
+        end tell"""
+    subprocess.Popen(
+        ["osascript", "-e", script],
+        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True,
+    )
 
 
 def parse_args() -> argparse.Namespace:
@@ -120,6 +150,7 @@ def main() -> None:
             try:
                 server.serve_forever()
                 logger.info("Server stopped: a newer copy of the site took over.")
+                close_terminal_window()
             except KeyboardInterrupt:
                 logger.info("Server stopped by user.")
             finally:

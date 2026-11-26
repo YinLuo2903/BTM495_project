@@ -53,8 +53,9 @@ jobs:
         run: |
           mkdir out
           if [ "${{ runner.os }}" = macOS ]; then
-            # zip keeps the executable bit, so the Mac download opens with a double-click
-            (cd dist && zip -q "../out/${{ matrix.asset }}.zip" "${{ matrix.file }}")
+            # Wrap it as "LPVR Bike Shop.app"; ditto zips it the way Finder does (keeps the app intact)
+            packaging/macos-app.sh "dist/${{ matrix.file }}" "${GITHUB_REF_NAME#ver}" dist
+            ditto -c -k --keepParent "dist/LPVR Bike Shop.app" "out/${{ matrix.asset }}.zip"
           else
             cp "dist/${{ matrix.file }}" "out/${{ matrix.asset }}"
           fi
@@ -82,5 +83,5 @@ jobs:
             Data is kept in a "LPVR Bike Shop" folder in your home folder.
 
             - **Windows:** `LPVR-Bike-Shop-windows.exe`. If SmartScreen warns, choose *More info → Run anyway*.
-            - **macOS:** unzip `LPVR-Bike-Shop-macos.zip`, then right-click `LPVR-Bike-Shop` → *Open* the first time (it is not signed by Apple).
+            - **macOS:** unzip `LPVR-Bike-Shop-macos.zip` and drag **LPVR Bike Shop** into Applications. The first time, right-click it → *Open* (it is not signed by Apple). It then opens from Spotlight or Launchpad.
             - **Linux:** `chmod +x LPVR-Bike-Shop-linux && ./LPVR-Bike-Shop-linux`.

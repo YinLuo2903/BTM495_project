@@ -59,6 +59,18 @@ describe("product showcase", () => {
     expect(screen.queryByRole("button", { name: /pause|play/i })).toBeNull(); // fully automatic
   });
 
+  it("slides the new product in and the old one out, in the direction of travel", async () => {
+    await renderShowcase([item(1), item(2), item(3)]);
+    const slides = () => document.querySelectorAll(".sc-slide");
+    act(() => { vi.advanceTimersByTime(SLIDE_MS); });
+    expect(slides()[1].className).toContain("is-active sc-from-next");
+    expect(slides()[0].className).toContain("is-leaving sc-to-next");
+    fireEvent.click(screen.getByRole("button", { name: "Previous product" }));
+    expect(slides()[0].className).toContain("is-active sc-from-prev");
+    expect(slides()[1].className).toContain("is-leaving sc-to-prev");
+    expect(slides()[2].className).toBe("sc-slide");
+  });
+
   it("holds on a slide the visitor picks, then carries on by itself after a pause", async () => {
     await renderShowcase([item(1), item(2), item(3)]);
     fireEvent.click(screen.getByRole("button", { name: "Show Item 3" }));
