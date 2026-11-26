@@ -63,21 +63,28 @@ def close_terminal_window() -> None:
     """After a newer launch took over, close this copy's macOS Terminal window.
 
     macOS Terminal keeps a window open after its program ends, so each replaced copy would
-    leave a "[Process completed]" window behind. A detached osascript closes it half a
-    second after we exit. Other systems close their console windows themselves.
+    leave a "[Process completed]" window behind. A detached osascript closes it once it is
+    idle. Other systems close their console windows themselves.
     """
     if sys.platform != "darwin" or os.environ.get("TERM_PROGRAM") != "Apple_Terminal" or not sys.stdin.isatty():
         return
     tty = os.ttyname(sys.stdin.fileno())
     # Only windows on our terminal that are no longer running anything: finished windows
     # keep reporting the terminal they last used, and macOS reuses those names.
+    # The packaged program's launcher cleans up its temporary files after we exit, so the
+    # window can stay busy for a few seconds: keep checking for up to 10 s.
     script = f"""
-        delay 0.5
         tell application "Terminal"
-            repeat with w in (get windows)
-                try
-                    if tty of selected tab of w is "{tty}" and not (busy of selected tab of w) then close w
-                end try
+            repeat 20 times
+                delay 0.5
+                repeat with w in (get windows)
+                    try
+                        if tty of selected tab of w is "{tty}" and not (busy of selected tab of w) then
+                            close w
+                            return
+                        end if
+                    end try
+                end repeat
             end repeat
         end tell"""
     subprocess.Popen(
