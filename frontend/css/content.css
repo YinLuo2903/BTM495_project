@@ -59,3 +59,8 @@
   background: #fff0f1;
   overflow-wrap: anywhere;
 }
+
+.customer-content a {
+  color: var(--ink);
+  text-decoration-color: var(--brand-dark);
+}

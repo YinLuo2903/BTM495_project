@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { PhotoBand } from "../../components/Photo";
 import { api, errorMessage, type ShopEvent } from "../../services/api";
 
 interface Customer { customer_id: number; name: string }
@@ -30,6 +31,7 @@ export function DemoEvents({ revision }: { revision: number }) {
     void run("/api/event-registrations", "POST", { event_id: Number(selected), customer_id: Number(data.get("customer_id")) });
   }
   return <section className="card">
+    <PhotoBand name="band-events" layout="corner" />
     <div className="card-heading"><div><h2>Event registration</h2><p className="muted">Create a sample event, then register customers until it is full.</p></div>
       <button type="button" onClick={() => void run("/api/events", "POST", { name: "Community Ride", participant_limit: 2 })}>Add sample event (limit 2)</button></div>
     <form className="inline-form" onSubmit={register}>

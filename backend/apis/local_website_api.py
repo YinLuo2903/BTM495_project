@@ -42,7 +42,7 @@ from backend.utils.validators import (
     is_valid_expiration_date,
     string_value,
 )
-from database.sqlite_database import DB_PATH
+from database.sqlite_database import DB_PATH, UPLOAD_DIR
 
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
 FRONTEND_BUILD_DIR = FRONTEND_DIR / "dist"
@@ -50,7 +50,7 @@ FRONTEND_PAGES = {
     "/", "/views/index.html", "/view/index.html",
     *(f"/views/customer/{page}.html" for page in (
         "index", "items", "item", "events", "appointments", "cart",
-        "checkout", "orders", "profile", "login", "signup",
+        "checkout", "orders", "profile", "login", "signup", "credits",
     )),
     *(f"/views/admin/{page}.html" for page in (
         "index", "customers", "events", "appointments", "orders", "payments",
@@ -58,7 +58,6 @@ FRONTEND_PAGES = {
     )),
 }
 # Images uploaded from the admin dashboard; served at /uploads/<name>.
-UPLOAD_DIR = Path(__file__).resolve().parents[2] / "database" / "uploads"
 MAX_UPLOAD_BYTES = 2 * 1024 * 1024
 # Content type -> (file extension, check on the first bytes so the type can't be faked).
 _IMAGE_TYPES = {

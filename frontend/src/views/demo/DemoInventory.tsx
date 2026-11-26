@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { PhotoBand } from "../../components/Photo";
 import { api, errorMessage, formatAmount, type Item } from "../../services/api";
 
 interface HistoryEntry {
@@ -54,6 +55,7 @@ export function DemoInventory({ revision }: { revision: number }) {
   }
 
   return <section className="card">
+    <PhotoBand name="band-inventory" />
     <h2>Inventory</h2><p className="muted">Stock lives in the inventory table; every quantity change is written to its history. Saving an existing item ID updates only what changed. Leave stock empty for an untracked item.</p>
     <form className="inline-form" onSubmit={save}>
       <div><label htmlFor="item-id">Item ID</label><input id="item-id" type="number" min="1" value={item.id} onChange={e => setItem({ ...item, id: e.target.value })} required /></div>

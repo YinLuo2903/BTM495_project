@@ -15,9 +15,6 @@
 /* 4. Page Layout & Structure */
 @import url("./page-layout.css");
 
-/* 5. Navigation */
-@import url("./navigation.css");
-
 /* 6. Forms & Inputs */
 @import url("./forms.css");
 
@@ -52,4 +49,6 @@
 @import url("./admin.css");
 
 /* 13. Responsive Design */
+@import url("./photos.css");
+@import url("./showcase.css");
 @import url("./responsive.css");

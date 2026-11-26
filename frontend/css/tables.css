@@ -46,3 +46,8 @@ td:last-child,
 th:last-child {
   text-align: right;
 }
+
+td[colspan] {
+  color: var(--muted);
+  text-align: center;
+}

@@ -1,11 +1,11 @@
-item_id,name,description,price,category,brand
-1,"Mountain Bike 29""","21-speed aluminum frame mountain bike with front suspension",649.99,Bikes,Trek
-2,Road Bike Carbon,Lightweight carbon fiber road bike with 22-speed drivetrain,2199.00,Bikes,Specialized
-3,Cycling Helmet,Ventilated adult helmet with adjustable fit and MIPS protection,79.95,Safety Gear,Giro
-4,Clipless Pedals,Dual-sided SPD pedals with adjustable release tension,59.99,Components,Shimano
-5,Tubeless Tire 700x28c,Puncture-resistant road tire for all-weather riding,54.50,Tires & Tubes,Continental
-6,Chain Lubricant 120ml,All-weather wet lube for smooth shifting and corrosion protection,11.99,Maintenance,Finish Line
-7,LED Bike Light Set,"USB-rechargeable front and rear lights, 400 lumens",39.99,Accessories,Cateye
-8,Floor Pump,High-pressure pump with gauge and dual valve head,49.00,Tools,Topeak
-9,Disc Brake Pads,Semi-metallic replacement pads for hydraulic disc brakes,24.95,Components,SRAM
-10,Hydration Backpack 2L,Lightweight cycling pack with 2L reservoir and storage pockets,89.99,Bags,CamelBak
+item_id,name,description,price,category,brand,image_path
+1,"Mountain Bike 29""",21-speed aluminum frame mountain bike with front suspension,649.99,Bikes,Trek,/uploads/b65adaf0af4a888ee2f185136e3cbb61.webp
+2,Road Bike Carbon,Lightweight carbon fiber road bike with 22-speed drivetrain,2199.00,Bikes,Specialized,/uploads/4dd4818bca79eef487e6cdb31f278b8d.webp
+3,Cycling Helmet,Ventilated adult helmet with adjustable fit and MIPS protection,79.95,Safety Gear,Giro,/uploads/488a3a54d1439751b1385afcd6a46ceb.webp
+4,Clipless Pedals,Dual-sided SPD pedals with adjustable release tension,59.99,Components,Shimano,/uploads/ddb3103c0bf5795655442c2b1be24787.webp
+5,Tubeless Tire 700x28c,Puncture-resistant road tire for all-weather riding,54.50,Tires & Tubes,Continental,/uploads/3d65359efd27fd4c1eb9859564285e68.webp
+6,Chain Lubricant 120ml,All-weather wet lube for smooth shifting and corrosion protection,11.99,Maintenance,Finish Line,/uploads/0134c27338a4ec67e5caa0e81c4a9ecb.webp
+7,LED Bike Light Set,"USB-rechargeable front and rear lights, 400 lumens",39.99,Accessories,Cateye,/uploads/c20beaa231548629e6764e578c1f9140.webp
+8,Floor Pump,High-pressure pump with gauge and dual valve head,49.00,Tools,Topeak,/uploads/962b7e1b388393aa7628b5b07900bf38.webp
+9,Disc Brake Pads,Semi-metallic replacement pads for hydraulic disc brakes,24.95,Components,SRAM,/uploads/98a48fc416483043e4e6330cecd73ac1.webp
+10,Hydration Backpack 2L,Lightweight cycling pack with 2L reservoir and storage pockets,89.99,Bags,CamelBak,/uploads/f10ed665b35a6a8d05b2038ea372d6b6.webp

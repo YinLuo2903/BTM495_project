@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { PhotoBand } from "../../components/Photo";
+import { THE_LINK } from "../customer/credits";
 import { api, errorMessage, formatAmount } from "../../services/api";
 
 export interface Order { order_id: number; order_date: string; total_amount: number; paid: boolean }
@@ -73,9 +75,9 @@ export function DemoOrders({ orders, payments, reload, report, setStatus, availa
     finally { setBusy(false); }
   }
   return <>
-    <section className="card"><div className="card-heading"><div><h2>Orders</h2><p className="muted">Payments use the total stored on an existing order. A sample order is added if needed.</p></div>
+    <section className="card"><PhotoBand name="band-orders" credit={`Photo: ${THE_LINK}`} /><div className="card-heading"><div><h2>Orders</h2><p className="muted">Payments use the total stored on an existing order. A sample order is added if needed.</p></div>
       <div className="button-group"><button type="button" disabled={!available || busy} onClick={() => void start()}>Make a payment</button><button type="button" className="button-danger" onClick={() => remove("order")}>Remove all orders</button></div></div>
-      <p role="status">{!available ? "Orders unavailable." : unpaid.length ? `${unpaid.length} unpaid order(s) available.` : orders.length ? "All current orders are paid. A new sample order will be created for testing." : "A sample order will be created when you start a payment."}</p>
+      <p className="card-note" role="status">{!available ? "Orders unavailable." : unpaid.length ? `${unpaid.length} unpaid order(s) available.` : orders.length ? "All current orders are paid. A new sample order will be created for testing." : "A sample order will be created when you start a payment."}</p>
       <div className="table-wrap"><table><thead><tr><th>Order</th><th>Date</th><th>Total</th><th>Status</th><th>Actions</th></tr></thead><tbody>
         {orders.length ? orders.map(order => <tr key={order.order_id}><td>#{order.order_id}</td><td>{order.order_date || "—"}</td><td>{formatAmount(order.total_amount)}</td><td>{order.paid ? "Paid" : "Unpaid"}</td><td>
           <button type="button" aria-label={`Edit order #${order.order_id}`} onClick={() => edit("order", order.order_id, order.total_amount)}>✎</button>

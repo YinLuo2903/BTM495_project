@@ -9,6 +9,7 @@ from backend.utils.constants import (
 from backend.utils.sqlite import SQLiteQuery, SQLiteSession, quote_identifier
 
 DB_PATH = Path(__file__).with_name("lpvr.db") # absolute path to the bike shop database file
+UPLOAD_DIR = Path(__file__).with_name("uploads") # pictures uploaded for items and events, served at /uploads/
 
 _LEGACY_SUFFIX = "_legacy"
 # Tables that carried the old category-scoped status foreign key, children first.

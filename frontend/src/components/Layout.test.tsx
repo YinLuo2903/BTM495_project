@@ -10,12 +10,18 @@ vi.mock("../services/cart", async importOriginal => ({ ...await importOriginal<t
 
 const line = (item_id: number, quantity: number) => ({ item_id, name: `Item ${item_id}`, category: "", price: 10, quantity, subtotal: 10 * quantity, stock_quantity: null });
 
+const inventoryResponse = (categories: string[]) => new Response(JSON.stringify({
+  status: "ok", items: categories.map((category, index) => ({ item_id: index + 1, name: `Item ${index}`, category })),
+}));
+
 beforeEach(() => {
   vi.mocked(fetchCart).mockResolvedValue({ items: [], count: 0, total: 0 });
+  vi.spyOn(globalThis, "fetch").mockResolvedValue(inventoryResponse([]));
 });
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   vi.resetAllMocks();
 });
 
@@ -52,8 +58,8 @@ describe("shared layout", () => {
     vi.mocked(watchSession).mockReturnValue(() => {});
     render(<Layout><main /></Layout>);
     const nav = screen.getByRole("navigation", { name: "Main navigation" });
-    expect(within(nav).getAllByRole("link").map(link => link.textContent)).toEqual([
-      "Home", "Items", "Events", "Appointments", "Shopping Cart", "Sign In", "Create account",
+    expect(within(nav).getAllByRole("link").map(link => link.getAttribute("aria-label") ?? link.textContent)).toEqual([
+      "LE PETIT VÉLO ROUGE home", "Home", "Items", "All items", "Events", "Appointments", "Shopping Cart", "Sign In", "Create account",
     ]);
     expect(screen.getByRole("link", { name: "Create account" }).getAttribute("href")).toBe("/views/customer/signup.html");
     expect(screen.queryByRole("button", { name: "Sign Out" })).toBeNull();
@@ -93,7 +99,7 @@ describe("shared layout", () => {
     act(() => update({ user: { name: "Pat", is_admin: false }, expiresAt: 123 }, null));
     expect((await screen.findByRole("link", { name: "Shopping Cart, 2 items" })).getAttribute("href")).toBe("/views/customer/cart.html");
     act(() => announceCart({ items: [line(1, 3)], count: 3, total: 30 }));
-    expect(screen.getByRole("link", { name: "Shopping Cart, 3 items" }).textContent).toBe("Shopping Cart3");
+    expect(screen.getByRole("link", { name: "Shopping Cart, 3 items" }).textContent).toBe("Cart3");
 
     act(() => update(null, null)); // signed out: badge goes away
     expect(screen.getByRole("link", { name: "Shopping Cart" })).toBeTruthy();
@@ -121,5 +127,46 @@ describe("shared layout", () => {
     expect(button.matches(":disabled")).toBe(false);
     act(() => update(null, null));
     expect(screen.getByRole("link", { name: "Sign In" })).toBeTruthy();
+  });
+
+  it("lists each item category once, sorted, under the Items menu", async () => {
+    vi.mocked(watchSession).mockReturnValue(() => {});
+    vi.mocked(globalThis.fetch).mockResolvedValue(inventoryResponse(["Tools", "Bikes", "Tools", "", "Tires & Tubes"]));
+    render(<Layout><main /></Layout>);
+    const menu = document.getElementById("nav-items-menu")!;
+    await waitFor(() => expect(within(menu).getAllByRole("link")).toHaveLength(4));
+    expect(within(menu).getAllByRole("link").map(link => [link.textContent, link.getAttribute("href")])).toEqual([
+      ["All items", "/views/customer/items.html"],
+      ["Bikes", "/views/customer/items.html?q=Bikes"],
+      ["Tires & Tubes", "/views/customer/items.html?q=Tires%20%26%20Tubes"],
+      ["Tools", "/views/customer/items.html?q=Tools"],
+    ]);
+  });
+
+  it("opens and closes sub-menus and the mobile menu with their buttons and Escape", () => {
+    vi.mocked(watchSession).mockReturnValue(() => {});
+    render(<Layout><main /></Layout>);
+    const caret = screen.getByRole("button", { name: "Items menu" });
+    expect(caret.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(caret);
+    expect(caret.getAttribute("aria-expanded")).toBe("true");
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(caret.getAttribute("aria-expanded")).toBe("false");
+
+    const toggle = screen.getByRole("button", { name: "Open menu" });
+    fireEvent.click(toggle);
+    expect(screen.getByRole("button", { name: "Close menu" }).getAttribute("aria-expanded")).toBe("true");
+    fireEvent.click(document.body); // a click outside closes it
+    expect(screen.getByRole("button", { name: "Open menu" }).getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("puts Sign Out in the signed-in account menu", () => {
+    let update!: (session: Session | null, error: Error | null) => void;
+    vi.mocked(watchSession).mockImplementation(callback => { update = callback; return () => {}; });
+    render(<Layout><main /></Layout>);
+    act(() => update({ user: { name: "Pat", is_admin: false }, expiresAt: 123 }, null));
+    const menu = document.getElementById("nav-account-menu")!;
+    expect(within(menu).getByRole("link", { name: "My profile" }).getAttribute("href")).toBe("/views/customer/profile.html");
+    expect(within(menu).getByRole("button", { name: "Sign Out" })).toBeTruthy();
   });
 });

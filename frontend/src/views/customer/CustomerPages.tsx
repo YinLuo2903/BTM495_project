@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { getSession, sessionApi, signIn, type Session } from "../../services/session";
 import { api, errorMessage, type CustomerProfile, type ShopEvent } from "../../services/api";
+import { Brand } from "../../components/Brand";
+import { PhotoBand, photoStyle } from "../../components/Photo";
 import { AppointmentsPage } from "./AppointmentsPage";
 import { CartPage } from "./CartPage";
 import { CheckoutPage } from "./CheckoutPage";
+import { CreditsPage } from "./CreditsPage";
 import { EventsPage } from "./EventsPage";
 import { ItemDetailPage } from "./ItemDetailPage";
 import { ItemsPage } from "./ItemsPage";
+import { ProductShowcase } from "./ProductShowcase";
 
 function useRemote<T>(path: string) {
   const [data, setData] = useState<T | null>(null);
@@ -57,12 +61,12 @@ function Login() {
     }
   }
   return <section className="card login-card" aria-labelledby="login-title">
-    <p className="login-eyebrow">LE PETIT VÉLO ROUGE</p><h1 id="login-title">Sign in</h1>
+    <Brand /><h1 id="login-title">Sign in</h1>
     <p className="login-intro">Sign in with your customer or admin account.</p>
-    <form id="login-form" onSubmit={submit} aria-busy={busy || undefined}>
-      <label htmlFor="login-email">Email</label><input id="login-email" name="email" type="email" autoComplete="username" required />
+    <form className="stacked-form" onSubmit={submit} aria-busy={busy || undefined}>
+      <label htmlFor="login-email">Email</label><input id="login-email" name="email" type="email" autoComplete="username" defaultValue="login@example.com" required />
       <label htmlFor="login-password">Password</label>
-      <div className="password-field"><input id="login-password" name="password" type={visible ? "text" : "password"} autoComplete="current-password" required />
+      <div className="password-field"><input id="login-password" name="password" type={visible ? "text" : "password"} autoComplete="current-password" defaultValue="1234" required />
         <button type="button" className="password-toggle" aria-controls="login-password" aria-label={visible ? "Hide password" : "Show password"} aria-pressed={visible} onClick={() => setVisible(!visible)}>{visible ? "Hide" : "Show"}</button></div>
       <p className="muted" role="status" aria-live="polite">{busy ? "Signing in..." : ""}</p>
       {error && <p className="error" role="alert">{error}</p>}
@@ -75,12 +79,13 @@ function Login() {
 
 function Home() {
   return <>
-    <header className="header customer-welcome"><img src="/assets/images/logo.png" alt="LE PETIT VÉLO ROUGE Logo" className="header-logo" />
-      <div><p className="eyebrow">LE PETIT VÉLO ROUGE</p><h1>Fix your own bike. We'll help.</h1>
+    <header className="header customer-welcome photo-hero" style={photoStyle("hero-workshop")}>
+      <div><Brand large /><h1>Fix your own bike. We'll help.</h1>
         <p className="subtitle">A self-serve community bike shop:use our tools and stands, share knowledge, and get friendly support from volunteers. No experience needed.</p></div></header>
-    <section className="card events-section"><h2>Upcoming Events</h2><p className="events-description">Discover our community activities.</p><Events home /><a href="events.html" className="events-link">View all events</a></section>
-    <div className="sections-grid"><section className="card browse-items-section"><h2>Browse Items</h2><p className="section-description">Explore our collection of bike parts and tools available for use or purchase.</p><a href="items.html" className="section-link">View all items</a></section>
-      <section className="card book-appointment-section"><h2>Book Appointment</h2><p className="section-description">Schedule a guided session with our expert volunteers for personalized assistance.</p><a href="appointments.html" className="section-link">View appointments</a></section></div>
+    <ProductShowcase />
+    <section className="card events-section"><PhotoBand name="band-events" layout="corner" /><h2>Upcoming Events</h2><p className="events-description">Discover our community activities.</p><Events home /><a href="events.html" className="events-link">View all events</a></section>
+    <div className="sections-grid"><section className="card browse-items-section"><PhotoBand name="band-items" /><h2>Browse Items</h2><p className="section-description">Explore our collection of bike parts and tools available for use or purchase.</p><a href="items.html" className="section-link">View all items</a></section>
+      <section className="card book-appointment-section"><PhotoBand name="band-appointments" /><h2>Book Appointment</h2><p className="section-description">Schedule a guided session with our expert volunteers for personalized assistance.</p><a href="appointments.html" className="section-link">View appointments</a></section></div>
     <p><a href="/">Return to the local demo</a></p>
   </>;
 }
@@ -258,6 +263,7 @@ export function CustomerPage({ page }: { page: string }) {
     case "checkout": content = <CheckoutPage />; break;
     case "orders": content = <Card><h2>Order history</h2><p className="customer-notice">Personal order history, statuses, and details require customer sessions and are not available yet.</p></Card>; break;
     case "appointments": content = <AppointmentsPage />; break;
+    case "credits": content = <CreditsPage />; break;
     default: content = <Card><h1>Page not found</h1></Card>;
   }
   return <main className={`page customer-content${page === "login" ? " login-page" : ""}`}>{content}</main>;

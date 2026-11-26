@@ -7,6 +7,7 @@ from backend.apis.local_website_api import (
     ensure_local_demo_login,
 )
 from backend.utils.logger import configure_backend_logging, get_logger
+from database.load_mockdata import has_shop_data, load_mockdata
 from database.sqlite_database import initialize_database
 
 DEFAULT_HOST = "127.0.0.1"
@@ -25,6 +26,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--host", default=DEFAULT_HOST, help="Bind address (default: loopback only)")
     parser.add_argument("--port", type=int, default=DEFAULT_PORT, help="Port (default: 8765)")
     parser.add_argument("--no-browser", action="store_true", help="Do not open a browser")
+    parser.add_argument(
+        "--no-mockdata",
+        action="store_true",
+        help="Do not load the sample CSV data into an empty database",
+    )
     return parser.parse_args()
 
 
@@ -36,6 +42,15 @@ def main() -> None:
         logger.info("Initializing SQLite database schema.")
         initialize_database()
         logger.info("Database initialization complete.")
+        # Fresh database (new clone or machine): fill it with the sample CSV data.
+        # This runs before the demo logins so the CSV rows keep their IDs.
+        if args.no_mockdata:
+            logger.info("Skipping sample data (--no-mockdata).")
+        elif has_shop_data():
+            logger.info("Shop data found; sample data not loaded.")
+        else:
+            counts = load_mockdata()
+            logger.info("Loaded sample data: %d rows from %d CSV files.", sum(counts.values()), len(counts))
         ensure_local_demo_login()
         logger.info("Local demo login is ready (login@example.com).")
         ensure_local_admin_login()

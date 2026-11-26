@@ -23,9 +23,12 @@ class RunLocalWebsiteTests(unittest.TestCase):
                     host="127.0.0.1",
                     port=8765,
                     no_browser=True,
+                    no_mockdata=False,
                 ),
             ),
             patch("run_local_website.initialize_database") as initialize_database,
+            patch("run_local_website.has_shop_data", return_value=True),
+            patch("run_local_website.load_mockdata") as load_mockdata,
             patch("run_local_website.ensure_local_demo_login") as ensure_demo_login,
             patch("run_local_website.ensure_local_admin_login") as ensure_admin_login,
             patch("run_local_website.create_server", return_value=server),
@@ -34,6 +37,7 @@ class RunLocalWebsiteTests(unittest.TestCase):
             run_local_website.main()
 
         initialize_database.assert_called_once_with()
+        load_mockdata.assert_not_called()
         ensure_demo_login.assert_called_once_with()
         ensure_admin_login.assert_called_once_with()
         output = "\n".join(logs.output)
@@ -45,6 +49,42 @@ class RunLocalWebsiteTests(unittest.TestCase):
         self.assertIn("Starting HTTP server on 127.0.0.1:8765.", output)
         self.assertIn("Server ready at http://localhost:8765/.", output)
         self.assertIn("Server stopped by user.", output)
+
+    def _run_main_with_empty_database(self, no_mockdata: bool) -> tuple[MagicMock, MagicMock, str]:
+        server = MagicMock()
+        server.__enter__.return_value = server
+        server.server_address = ("127.0.0.1", 8765)
+        server.serve_forever.side_effect = KeyboardInterrupt
+        calls = MagicMock()
+        with (
+            patch(
+                "run_local_website.parse_args",
+                return_value=Namespace(host="127.0.0.1", port=8765, no_browser=True, no_mockdata=no_mockdata),
+            ),
+            patch("run_local_website.initialize_database"),
+            patch("run_local_website.has_shop_data", return_value=False),
+            patch("run_local_website.load_mockdata", calls.load_mockdata),
+            patch("run_local_website.ensure_local_demo_login", calls.ensure_demo_login),
+            patch("run_local_website.ensure_local_admin_login"),
+            patch("run_local_website.create_server", return_value=server),
+            self.assertLogs("backend.run_local_website", level="INFO") as logs,
+        ):
+            calls.load_mockdata.return_value = {"item": 9, "orders": 9}
+            run_local_website.main()
+        return calls, calls.load_mockdata, "\n".join(logs.output)
+
+    def test_main_loads_sample_data_into_empty_database_before_demo_logins(self) -> None:
+        calls, load_mockdata, output = self._run_main_with_empty_database(no_mockdata=False)
+        load_mockdata.assert_called_once_with()
+        # CSV rows must go in first so the demo login does not take customer ID 1.
+        names = [name for name, *_ in calls.mock_calls]
+        self.assertLess(names.index("load_mockdata"), names.index("ensure_demo_login"))
+        self.assertIn("Loaded sample data: 18 rows from 2 CSV files.", output)
+
+    def test_main_skips_sample_data_with_flag(self) -> None:
+        _, load_mockdata, output = self._run_main_with_empty_database(no_mockdata=True)
+        load_mockdata.assert_not_called()
+        self.assertIn("Skipping sample data (--no-mockdata).", output)
 
 
 if __name__ == "__main__":

@@ -17,7 +17,7 @@ const plural = (count: number) => `${count} ${count === 1 ? "item" : "items"}`;
 export function ItemsPage() {
   const [items, setItems] = useState<Item[] | null>(null);
   const [loadError, setLoadError] = useState("");
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(() => new URLSearchParams(window.location.search).get("q") ?? "");
   const [page, setPage] = useState(1);
   const cart = useAddToCart();
   const searchInput = useRef<HTMLInputElement>(null);

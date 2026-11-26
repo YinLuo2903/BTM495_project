@@ -94,3 +94,12 @@ No real payment is made and card details are never stored.
 
 ## Contribution
 Except for repo admins, everyone else needs to work on a local branch and open a PR.
+
+## License
+The source code is released under the [MIT License](LICENSE).
+
+The photos and logo are not covered by the MIT License. The shop's logo and photos belong to
+Le Petit Vélo Rouge, two photos belong to Ivan de Jacquelin / The Link, and the sample
+item and event photos come from Wikimedia Commons under Creative Commons licenses or the public domain. See
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for every file and its terms; the website
+shows the same credits on its **Photo credits** page (linked in the footer).

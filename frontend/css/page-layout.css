@@ -14,6 +14,14 @@
   gap: 24px;
 }
 
+.card-note {
+  margin: 14px 0 0;
+}
+
+.card-heading + .inline-form {
+  margin-top: 18px;
+}
+
 .header {
   position: relative;
   min-height: 218px;
@@ -45,12 +53,6 @@
   box-shadow: none;
 }
 
-.header-logo {
-  width: 140px;
-  height: 140px;
-  object-fit: contain;
-  flex-shrink: 0;
-}
 
 .header > div,
 .header > span {

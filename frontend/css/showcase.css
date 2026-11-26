@@ -1,0 +1,250 @@
+/* Home page product slideshow (src/views/customer/ProductShowcase.tsx). */
+
+.sc {
+  position: relative;
+  overflow: hidden;
+}
+
+.sc-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.sc-kicker {
+  margin: 0 0 4px;
+  color: var(--brand-dark);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.sc-head h2 {
+  margin: 0;
+}
+
+.sc-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.sc .sc-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--ink);
+  background: #fff;
+  box-shadow: none;
+  font-size: 22px;
+  line-height: 1;
+  transition: background-color 160ms ease, transform 160ms ease, border-color 160ms ease;
+}
+
+.sc .sc-btn:hover:not(:disabled) {
+  border-color: var(--brand);
+  background: rgb(242 106 27 / 10%);
+  box-shadow: none;
+  transform: translateY(-1px);
+}
+
+/* All slides share one grid cell, so the track is as tall as the tallest slide. */
+.sc-track {
+  display: grid;
+  touch-action: pan-y;
+}
+
+.sc-slide {
+  display: grid;
+  grid-area: 1 / 1;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  align-items: stretch;
+  gap: 32px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(36px);
+  transition: opacity 600ms ease, transform 700ms cubic-bezier(0.2, 0.7, 0.2, 1), visibility 0s linear 700ms;
+}
+
+.sc-slide.is-active {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 600ms ease, transform 700ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.sc-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding: 8px 0;
+}
+
+/* Text "builds in" one line after another, like presentation animations. */
+.sc-slide.is-active .sc-anim {
+  animation: sc-rise 650ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.sc-slide.is-active .sc-anim:nth-child(2) { animation-delay: 90ms; }
+.sc-slide.is-active .sc-anim:nth-child(3) { animation-delay: 180ms; }
+.sc-slide.is-active .sc-anim:nth-child(4) { animation-delay: 270ms; }
+.sc-slide.is-active .sc-anim:nth-child(5) { animation-delay: 360ms; }
+
+@keyframes sc-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+.sc-meta {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sc-name {
+  margin: 0 0 10px;
+  font-size: clamp(26px, 3.2vw, 38px);
+  line-height: 1.1;
+}
+
+.sc-desc {
+  margin: 0 0 16px;
+  color: #444;
+  line-height: 1.55;
+}
+
+.sc-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px;
+  margin: 0 0 20px;
+}
+
+.sc-price strong {
+  font-size: 26px;
+}
+
+.sc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+
+.sc-more {
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration-color: var(--brand);
+  text-underline-offset: 4px;
+}
+
+/* Product photo, slowly zooming while its slide is up. */
+.sc-visual {
+  position: relative;
+  min-height: 320px;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #f3f3f3;
+}
+
+.sc-visual img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sc-slide.is-active .sc-visual img {
+  animation: sc-kenburns 9s ease-out both;
+}
+
+@keyframes sc-kenburns {
+  from { transform: scale(1.12); }
+}
+
+/* Dots with a progress bar on the current slide. */
+.sc-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.sc .sc-dot {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: #d9d9d9;
+  box-shadow: none;
+  transition: width 300ms ease, background-color 200ms ease;
+}
+
+.sc .sc-dot:hover:not(:disabled) {
+  background: #bdbdbd;
+  box-shadow: none;
+}
+
+.sc .sc-dot.is-active {
+  width: 44px;
+  background: rgb(242 106 27 / 25%);
+}
+
+.sc-dot-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--brand);
+  transform-origin: left;
+  animation: sc-progress linear both;
+}
+
+@keyframes sc-progress {
+  from { transform: scaleX(0); }
+}
+
+@media (max-width: 700px) {
+  .sc-slide {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .sc-visual {
+    order: -1;
+    min-height: 200px;
+  }
+
+  .sc-head {
+    align-items: center;
+  }
+}
+
+/* Reduce Motion: no zoom or text build-in (responsive.css already removes transitions). */
+@media (prefers-reduced-motion: reduce) {
+  .sc *:not(.sc-dot-fill) {
+    animation: none !important;
+  }
+
+  .sc-slide,
+  .sc-slide.is-active {
+    transform: none;
+  }
+}

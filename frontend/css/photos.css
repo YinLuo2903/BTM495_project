@@ -1,0 +1,276 @@
+/* Photo backgrounds that fade into the page.
+ * Each element gets its photo from the --photo custom property (see src/components/Photo.tsx),
+ * so the same effect can be reused with any image. */
+
+/* Hero banner: photo on the right, fading out towards the text on the left. */
+.photo-hero::before {
+  position: absolute;
+  inset: 0;
+  background: var(--photo) right center / cover no-repeat;
+  content: "";
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent 18%, rgb(0 0 0 / 55%) 48%, #000 78%);
+  mask-image: linear-gradient(90deg, transparent 18%, rgb(0 0 0 / 55%) 48%, #000 78%);
+}
+
+/* On the brand-orange header, tint the photo with the orange instead of covering it. */
+.header.photo-hero:not(.customer-welcome)::before {
+  mix-blend-mode: multiply;
+  opacity: 0.7;
+  -webkit-mask-image: linear-gradient(90deg, transparent 35%, rgb(0 0 0 / 50%) 62%, #000 90%);
+  mask-image: linear-gradient(90deg, transparent 35%, rgb(0 0 0 / 50%) 62%, #000 90%);
+}
+
+/* Light headers (customer home): also soften the bottom edge into the page. */
+.customer-welcome.photo-hero {
+  justify-content: flex-start;
+  border-radius: 20px;
+}
+
+/* Keep the headline and subtitle on the faded side, clear of the photo. */
+.customer-welcome.photo-hero > div {
+  max-width: 560px;
+}
+
+.customer-welcome.photo-hero::before {
+  left: 40%;
+  border-radius: 0 20px 20px 0;
+  -webkit-mask-image:
+    linear-gradient(90deg, transparent, rgb(0 0 0 / 70%) 40%, #000 70%),
+    linear-gradient(180deg, #000 70%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(90deg, transparent, rgb(0 0 0 / 70%) 40%, #000 70%),
+    linear-gradient(180deg, #000 70%, transparent);
+  mask-composite: intersect;
+}
+
+/* Footer: a faint photo that rises out of the page background. */
+.photo-footer {
+  position: relative;
+  overflow: hidden;
+}
+
+.photo-footer::before {
+  position: absolute;
+  inset: 0;
+  background: var(--photo) center 40% / cover no-repeat;
+  content: "";
+  opacity: 0.22;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 55%);
+  mask-image: linear-gradient(180deg, transparent, #000 55%);
+}
+
+.photo-footer > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Card strip: full-bleed across the top of a .card, fading into the white card. */
+.card-photo {
+  position: relative;
+  height: 150px;
+  margin: -26px -28px 18px;
+  border-radius: 16px 16px 0 0;
+  background: var(--photo) center / cover no-repeat;
+  -webkit-mask-image: linear-gradient(180deg, #000 45%, transparent);
+  mask-image: linear-gradient(180deg, #000 45%, transparent);
+}
+
+/* Corner photo: top-right of the card, fading left into the heading and down into the content. */
+.card:has(> .card-photo--corner) {
+  position: relative;
+  overflow: hidden;
+}
+
+.card:has(> .card-photo--corner) > :not(.card-photo) {
+  position: relative;
+  z-index: 1;
+}
+
+.card-photo.card-photo--corner {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 60%;
+  height: 230px;
+  margin: 0;
+  border-radius: 0 16px 0 0;
+  background-position: center 30%;
+  -webkit-mask-image:
+    linear-gradient(90deg, transparent, rgb(0 0 0 / 75%) 35%, #000 65%),
+    linear-gradient(180deg, #000 40%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(90deg, transparent, rgb(0 0 0 / 75%) 35%, #000 65%),
+    linear-gradient(180deg, #000 40%, transparent);
+  mask-composite: intersect;
+}
+
+.photo-credit {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #fff;
+  background: rgb(0 0 0 / 45%);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+}
+
+.header > .photo-credit {
+  position: absolute;
+  top: auto;
+  right: 14px;
+  bottom: 12px;
+  z-index: 1;
+}
+
+@media (max-width: 700px) {
+  .card-photo {
+    height: 120px;
+    margin: -21px -21px 16px;
+  }
+
+  /* Narrow screens: the text spans the whole banner, so keep the photo faint. */
+  .customer-welcome.photo-hero::before {
+    left: 0;
+    border-radius: inherit;
+    opacity: 0.4;
+  }
+
+  .card-photo.card-photo--corner {
+    width: 100%;
+    height: 170px;
+    border-radius: 16px 16px 0 0;
+    opacity: 0.5;
+  }
+
+  .header.photo-hero:not(.customer-welcome)::before {
+    opacity: 0.45;
+  }
+}
+
+/* Photo credits page (credits.html). */
+.credit-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.credit-summary li {
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 85%);
+  font-size: 14px;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 6%);
+}
+
+.credit-summary strong {
+  color: var(--brand-dark);
+}
+
+.credit-section {
+  margin-top: 24px;
+}
+
+.credit-section > .muted {
+  max-width: 560px;
+}
+
+.credit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 18px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.credit-tile {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.credit-tile:hover {
+  box-shadow: 0 14px 30px rgb(0 0 0 / 10%);
+  transform: translateY(-3px);
+}
+
+.credit-thumb {
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: #f3f3f3;
+}
+
+.credit-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 400ms ease;
+}
+
+.credit-thumb img.credit-thumb-logo {
+  padding: 18%;
+  object-fit: contain;
+}
+
+.credit-tile:hover .credit-thumb img {
+  transform: scale(1.06);
+}
+
+.credit-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 14px 14px;
+  font-size: 14px;
+}
+
+.credit-author {
+  color: var(--muted);
+}
+
+.credit-author a {
+  color: var(--ink);
+  text-decoration-color: var(--brand);
+  text-underline-offset: 3px;
+}
+
+.credit-license {
+  margin-top: auto;
+  padding: 3px 10px;
+  border-radius: 999px;
+  color: #8a3b08;
+  background: rgb(242 106 27 / 12%);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.credit-license.is-open {
+  color: #1d6b3a;
+  background: rgb(29 122 62 / 11%);
+}
+
+a.credit-license:hover {
+  text-decoration: underline;
+}
+
+.credit-body strong + .credit-author {
+  margin-bottom: 8px;
+}

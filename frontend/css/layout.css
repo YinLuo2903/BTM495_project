@@ -1,21 +1,45 @@
-/* Layout-specific styles for injected components */
-/* SYNCED WITH .home-nav in frontend/css/navigation.css */
+/* Customer navigation bar (src/components/SiteNav.tsx).
+ * Desktop: one row; links get a sliding underline on hover, sub-menus open on hover or focus.
+ * Up to 900px wide: the links collapse behind a menu button and sub-menus open on tap. */
 
-/* Navigation container structure - MATCHES HOME PAGE SIZING */
-.nav-container {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 32px 24px;
-  padding: 16px 24px; /* SYNCED: Same as .home-nav */
-  border-bottom: 3px solid var(--brand);
-  background: #fff;
-  width: 100%;
+.home-nav {
   position: fixed;
   top: 0;
-  left: 0;
   right: 0;
+  left: 0;
   z-index: 1000;
+  background: rgb(255 255 255 / 92%);
+  -webkit-backdrop-filter: saturate(160%) blur(12px);
+  backdrop-filter: saturate(160%) blur(12px);
+  box-shadow: 0 1px 0 var(--line), 0 6px 24px rgb(0 0 0 / 5%);
+}
+
+.home-nav a {
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.home-nav::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--brand), var(--brand-dark));
+  content: "";
+}
+
+.nav-container {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 24px;
+  max-width: 1240px;
+  min-height: 68px;
+  margin: 0 auto;
+  padding: 10px 24px;
 }
 
 .nav-brand {
@@ -23,53 +47,302 @@
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+  color: var(--ink);
+  text-decoration: none;
 }
 
-.nav-logo {
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
+/* Brand lockup (src/components/Brand.tsx): logo + small tracked "LE PETIT" over a heavy
+   condensed "VÉLO ROUGE". Menu bar size by default, .brand-lg in page banners. */
+@font-face {
+  font-family: "Barlow Condensed";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("../assets/fonts/barlow-condensed-800-latin.woff2") format("woff2");
 }
 
-.nav-title {
-  font-weight: 700;
-  font-size: 15px; /* SYNCED: Matches home page nav */
-  letter-spacing: 0.05em;
+.brand {
+  --brand-logo: 40px;
+  --brand-big: 27px;
+  --brand-small: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   white-space: nowrap;
 }
 
-.nav-menu {
+.brand-lg {
+  --brand-logo: 64px;
+  --brand-big: 40px;
+  --brand-small: 13px;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+/* logo.png is a wide canvas (1152x768) with the round mark in its middle 645x719 px:
+   crop to the mark so it lines up with the text beside and below it. */
+.brand-logo {
+  width: auto;
+  height: var(--brand-logo);
+  aspect-ratio: 645 / 719;
+  object-fit: cover;
+  transition: transform 300ms ease;
+}
+
+.brand-words {
+  display: grid;
+  line-height: 0.9;
+}
+
+.brand-small {
+  margin-left: 1px;
+  color: var(--muted);
+  font-size: var(--brand-small);
+  font-weight: 700;
+  letter-spacing: 0.42em;
+}
+
+.brand-big {
+  color: var(--ink);
+  font-family: "Barlow Condensed", "Arial Narrow", sans-serif;
+  font-size: var(--brand-big);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: 0.02em;
+}
+
+.brand-big span {
+  color: var(--brand);
+  transition: color 200ms ease;
+}
+
+.nav-brand:hover .brand-logo {
+  transform: rotate(-12deg) scale(1.06);
+}
+
+.nav-brand:hover .brand-big span {
+  color: var(--brand-dark);
+}
+
+.nav-panel {
   display: flex;
+  flex: 1;
   align-items: center;
-  gap: 24px 28px;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.nav-menu,
+.nav-actions,
+.nav-submenu {
   margin: 0;
   padding: 0;
   list-style: none;
-  flex-wrap: wrap;
 }
 
-.nav-menu a {
-  text-decoration: none;
-  color: var(--ink);
-  font-weight: 600; /* SYNCED: Same as .home-nav a */
-  font-size: 15px; /* SYNCED: Same as home page nav */
-  transition: color 0.2s;
+.nav-menu,
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.nav-menu a:hover {
-  color: var(--brand);
+.nav-menu {
+  margin: 0 auto;
 }
 
-.nav-auth {
-  margin-left: auto;
-}
-
-/* Signed-in account link: person icon + name, opens My Profile. */
-.nav-menu a.nav-account {
+/* Top-level links: muted until hovered, with an underline that grows from the centre. */
+.home-nav .nav-link {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  max-width: 220px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: #3a3a3a;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+
+.home-nav .nav-link::after {
+  position: absolute;
+  right: 12px;
+  bottom: 4px;
+  left: 12px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--brand);
+  content: "";
+  transform: scaleX(0);
+  transition: transform 220ms ease;
+}
+
+.home-nav .nav-link:hover,
+.home-nav .nav-link[aria-current="page"] {
+  color: var(--ink);
+}
+
+.home-nav .nav-link:hover::after,
+.home-nav .nav-link[aria-current="page"]::after,
+.nav-dropdown:focus-within > .nav-link::after {
+  transform: scaleX(1);
+}
+
+/* Dropdowns */
+.nav-dropdown {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.nav-dropdown > .nav-link {
+  padding-right: 2px;
+}
+
+.nav-caret {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: #3a3a3a;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  transition: transform 200ms ease, color 160ms ease;
+}
+
+.nav-caret:hover:not(:disabled) {
+  color: var(--ink);
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.nav-submenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 10;
+  min-width: 200px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 18px 40px rgb(0 0 0 / 12%);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition: opacity 160ms ease, transform 160ms ease, visibility 0s linear 160ms;
+}
+
+/* Invisible bridge so the pointer can travel from the link into the menu. */
+.nav-submenu::before {
+  position: absolute;
+  top: -10px;
+  right: 0;
+  left: 0;
+  height: 10px;
+  content: "";
+}
+
+.nav-actions .nav-submenu {
+  right: 0;
+  left: auto;
+}
+
+.nav-dropdown.is-open > .nav-submenu,
+.nav-dropdown:focus-within > .nav-submenu {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.nav-dropdown.is-open > .nav-caret {
+  transform: rotate(180deg);
+}
+
+@media (hover: hover) and (min-width: 901px) {
+  .nav-dropdown:hover > .nav-submenu {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition: opacity 160ms ease, transform 160ms ease;
+  }
+
+  .nav-dropdown:hover > .nav-caret {
+    transform: rotate(180deg);
+  }
+}
+
+.nav-submenu a,
+.nav-submenu button {
+  display: block;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--ink);
+  background: transparent;
+  box-shadow: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  transition: background-color 140ms ease, padding-left 140ms ease;
+}
+
+.nav-submenu a:hover,
+.nav-submenu button:hover:not(:disabled),
+.nav-submenu a:focus-visible,
+.nav-submenu button:focus-visible {
+  padding-left: 16px;
+  color: var(--ink);
+  background: rgb(242 106 27 / 10%);
+  transform: none;
+  box-shadow: none;
+}
+
+.nav-submenu li:first-child a {
+  font-weight: 700;
+}
+
+/* Right-hand actions: cart, account, sign in */
+.nav-cart-link {
+  position: relative;
+}
+
+.nav-cart-count {
+  position: absolute;
+  top: 2px;
+  left: 24px;
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  color: var(--ink);
+  background: var(--brand);
+  font-size: 10px;
+  font-weight: 700;
+  animation: nav-pop 260ms ease;
+}
+
+@keyframes nav-pop {
+  from { transform: scale(0.4); }
+}
+
+.home-nav a.nav-account {
+  max-width: 200px;
 }
 
 .nav-account span {
@@ -78,16 +351,167 @@
   white-space: nowrap;
 }
 
-/* Guests: "Create account" as an outlined pill beside Sign In. */
-.nav-menu a.nav-signup {
-  padding: 6px 14px;
-  border: 1.5px solid var(--brand);
+.nav-session-status:empty {
+  display: none;
+}
+
+.nav-session-status {
+  color: #a12622;
+  font-size: 13px;
+}
+
+/* Guests: "Create account" as a filled pill beside Sign In. */
+.home-nav a.nav-signup {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 8px 16px;
   border-radius: 999px;
   color: var(--ink);
-}
-
-.nav-menu a.nav-signup:hover {
-  color: var(--ink);
   background: var(--brand);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgb(242 106 27 / 30%);
+  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
 }
 
+.home-nav a.nav-signup:hover {
+  background: #ff7a2b;
+  box-shadow: 0 8px 20px rgb(242 106 27 / 38%);
+  transform: translateY(-1px);
+}
+
+/* Menu button: only on narrow screens. */
+.nav-toggle {
+  display: none;
+  margin-left: auto;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink);
+  background: #fff;
+  box-shadow: none;
+}
+
+.nav-toggle:hover:not(:disabled) {
+  background: #f6f6f6;
+  box-shadow: none;
+  transform: none;
+}
+
+@media (max-width: 900px) {
+  .nav-toggle {
+    display: inline-grid;
+    place-items: center;
+  }
+
+  .nav-panel {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    max-height: calc(100vh - 70px);
+    padding: 8px 16px 16px;
+    overflow-y: auto;
+    border-bottom: 3px solid var(--brand);
+    background: #fff;
+    box-shadow: 0 18px 30px rgb(0 0 0 / 10%);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: opacity 180ms ease, transform 180ms ease, visibility 0s linear 180ms;
+  }
+
+  .nav-panel.is-open {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition: opacity 180ms ease, transform 180ms ease;
+  }
+
+  .nav-menu,
+  .nav-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+    margin: 0;
+  }
+
+  .nav-actions {
+    padding-top: 8px;
+    border-top: 1px solid var(--line);
+  }
+
+  .home-nav .nav-link {
+    width: 100%;
+    padding: 12px;
+  }
+
+  .home-nav .nav-link::after {
+    display: none;
+  }
+
+  .home-nav .nav-link:hover,
+  .home-nav .nav-link[aria-current="page"] {
+    background: rgb(242 106 27 / 9%);
+  }
+
+  .nav-dropdown {
+    flex-wrap: wrap;
+  }
+
+  .nav-dropdown > .nav-link {
+    flex: 1;
+    width: auto;
+  }
+
+  .nav-caret {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* Sub-menus expand in place instead of floating. */
+  .nav-submenu,
+  .nav-actions .nav-submenu {
+    position: static;
+    display: none;
+    flex-basis: 100%;
+    min-width: 0;
+    margin: 0 0 6px 12px;
+    padding: 4px;
+    border: 0;
+    border-left: 2px solid var(--brand);
+    border-radius: 0;
+    box-shadow: none;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+  }
+
+  .nav-dropdown.is-open > .nav-submenu {
+    display: block;
+  }
+
+  .home-nav a.nav-signup {
+    margin: 6px 0 0;
+    text-align: center;
+  }
+
+  .home-nav a.nav-account {
+    max-width: none;
+  }
+
+  .nav-cart-count {
+    left: 26px;
+  }
+}
+
+/* Reduce Motion: responsive.css already removes transitions; also stop the badge pop. */
+@media (prefers-reduced-motion: reduce) {
+  .nav-cart-count {
+    animation: none;
+  }
+}
