@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 
 from backend.utils.constants import (
@@ -8,8 +9,12 @@ from backend.utils.constants import (
 )
 from backend.utils.sqlite import SQLiteQuery, SQLiteSession, quote_identifier
 
-DB_PATH = Path(__file__).with_name("lpvr.db") # absolute path to the bike shop database file
-UPLOAD_DIR = Path(__file__).with_name("uploads") # pictures uploaded for items and events, served at /uploads/
+# Writable data lives next to this file when running from source. A packaged release
+# (PyInstaller sets sys.frozen) unpacks its code to a temporary folder, so it keeps the data
+# in the user's home folder instead.
+DATA_DIR = Path.home() / "LPVR Bike Shop" if getattr(sys, "frozen", False) else Path(__file__).parent
+DB_PATH = DATA_DIR / "lpvr.db"  # the bike shop database file
+UPLOAD_DIR = DATA_DIR / "uploads"  # pictures uploaded for items and events, served at /uploads/
 
 _LEGACY_SUFFIX = "_legacy"
 # Tables that carried the old category-scoped status foreign key, children first.
@@ -31,6 +36,7 @@ _LEGACY_STATUS_IDS = {
 
 # The main function to initialize the SQLite database using the schema.sql file
 def initialize_database(database_path: str | Path = DB_PATH) -> None:
+    Path(database_path).parent.mkdir(parents=True, exist_ok=True)
     database = SQLiteQuery(database_path)
     _park_legacy_status_tables(database)
     _migrate_customer_names(database)

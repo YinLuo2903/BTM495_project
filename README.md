@@ -17,7 +17,18 @@ flowchart LR
     FE -. "message" .-> U
 ```
 
-## Quick start
+## Download
+
+No setup needed: get the latest copy from the
+[Releases page](https://github.com/YinLuo2903/BTM495_project/releases/latest) and open it. The site
+opens in your browser at `http://localhost:8765/`, with sample data loaded. The Windows (`.exe`),
+macOS and Linux programs have Python built in, so nothing else needs installing; the database and
+uploaded pictures are kept in a `LPVR Bike Shop` folder in your home folder.
+
+Maintainers: pushing a version tag (`git tag v1.0.0 && git push origin v1.0.0`) builds all
+downloads and publishes the release (see `.github/workflows/release.yml`).
+
+## Quick start (from source)
 
 **Step 1. Clone the project**
 

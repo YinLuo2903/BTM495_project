@@ -15,6 +15,10 @@ frontend/.vite/
 frontend/coverage/
 *.tsbuildinfo
 
+# PyInstaller output (pyinstaller packaging/lpvr.spec)
+/build/
+/dist/
+
 # Temporary and editor files
 tmp/
 temp/
