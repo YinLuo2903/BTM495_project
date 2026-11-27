@@ -643,7 +643,8 @@
 
 .adm-kpi-value {
   margin-top: 8px;
-  font-size: 30px;
+  font-size: clamp(20px, 1.9vw, 30px);
+  white-space: nowrap;
   font-weight: 800;
   line-height: 1.1;
 }
@@ -1073,4 +1074,258 @@
 
 .adm-toast svg {
   color: #7fd497;
+}
+
+/* ---- Dashboard: brand, photo banner, glance panels, trends, hover motion ---- */
+.adm-brand {
+  padding: 0 8px 4px;
+}
+
+.adm-hero {
+  position: relative;
+  min-height: 150px;
+  align-items: center;
+  padding: 24px 28px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+}
+
+.adm-hero::before {
+  border-radius: inherit;
+}
+
+.adm-hero > div {
+  position: relative;
+  z-index: 1;
+}
+
+a.adm-kpi {
+  color: inherit;
+  text-decoration: none;
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 200ms ease;
+}
+
+a.adm-kpi:hover,
+a.adm-kpi:focus-visible {
+  border-color: rgb(242 106 27 / 45%);
+  box-shadow: 0 14px 30px rgb(0 0 0 / 9%);
+  transform: translateY(-3px);
+}
+
+.adm-glance {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 18px;
+  margin: 18px 0;
+}
+
+.adm-glance > .card {
+  margin: 0;
+}
+
+.adm-attention h2 {
+  margin: 0 0 10px;
+}
+
+.adm-attention ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.adm-attention a {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 12px 6px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  text-decoration: none;
+  transition: background-color 160ms ease, padding-left 160ms ease;
+}
+
+.adm-attention li:last-child a {
+  border-bottom: 0;
+}
+
+.adm-attention a:hover {
+  padding-left: 12px;
+  background: var(--ev-tint);
+}
+
+.adm-attention a strong {
+  flex-basis: 100%;
+}
+
+.adm-att-item {
+  display: inline-flex;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.adm-trends {
+  margin-bottom: 18px;
+}
+
+.adm-range {
+  display: flex;
+  gap: 6px;
+}
+
+.adm-trend-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 8px 24px;
+  padding: 8px 20px 20px;
+}
+
+/* Trend chart (src/components/TrendChart.tsx) */
+.trend {
+  margin: 0;
+}
+
+.trend figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  margin-bottom: 4px;
+}
+
+.trend-title {
+  flex-basis: 100%;
+  color: #555;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.trend-value {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.trend-value strong {
+  color: var(--ink);
+  font-size: 20px;
+}
+
+.trend-note {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.trend svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.trend-grid {
+  stroke: #ececec;
+  stroke-width: 1;
+}
+
+.trend-axis {
+  fill: #6b6b6b;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.trend-bar {
+  fill: var(--brand);
+  transition: opacity 120ms ease;
+}
+
+.trend svg:hover .trend-bar:not(.is-hover) {
+  opacity: 0.55;
+}
+
+.trend-line {
+  fill: none;
+  stroke: var(--brand);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.trend-area {
+  fill: var(--brand);
+  opacity: 0.1;
+}
+
+.trend-dot {
+  fill: var(--brand);
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+.trend-cross {
+  stroke: #9a9a9a;
+  stroke-width: 1;
+}
+
+.trend-hit {
+  fill: transparent;
+  cursor: crosshair;
+}
+
+.trend-hit:focus-visible {
+  outline: none;
+  fill: rgb(242 106 27 / 8%);
+}
+
+.trend-table summary {
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.trend-table table {
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+/* Hover motion, matching the customer site (css/motion.css) */
+.adm-tr:not(.adm-th-row) {
+  transition: background-color 160ms ease;
+}
+
+.adm-tr:not(.adm-th-row):hover {
+  background: rgb(242 106 27 / 4%);
+}
+
+.adm-chip {
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.adm-chip:hover {
+  box-shadow: 0 6px 14px rgb(0 0 0 / 10%);
+  transform: translateY(-2px);
+}
+
+.adm-thumb {
+  transition: transform 300ms ease;
+}
+
+.adm-tr:hover .adm-thumb {
+  transform: scale(1.12);
+}
+
+.adm-nav-link {
+  transition: background-color 160ms ease, color 160ms ease, padding-left 160ms ease;
+}
+
+.adm-nav-link:hover:not([aria-current="page"]) {
+  padding-left: 18px;
+}
+
+@media (max-width: 900px) {
+  .adm-glance {
+    grid-template-columns: 1fr;
+  }
 }

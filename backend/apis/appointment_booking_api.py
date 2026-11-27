@@ -157,6 +157,31 @@ class AppointmentBookingAPI:
             },
         )
 
+    def forCustomer(self, customerID: int) -> Response:
+        """The customer's appointments, oldest first, with the repair type split back out."""
+        if type(customerID) is not int or customerID <= 0:
+            return Response.warning("A valid customer ID is required.")
+        with self.database.session(read_only=True) as session:
+            rows = session.fetch_all(
+                f'SELECT "{DatabaseColumns.APPOINTMENT_ID}", "{DatabaseColumns.APPOINTMENT_TIME}", '
+                f'"{DatabaseColumns.DESCRIPTION}", "{DatabaseColumns.STATUS_ID}" FROM "{DatabaseTables.APPOINTMENT}" '
+                f'WHERE "{DatabaseColumns.CUSTOMER_ID}" = ? ORDER BY "{DatabaseColumns.APPOINTMENT_TIME}"',
+                (customerID,),
+            )
+        appointments = []
+        for appointment_id, appointment_time, description, status_id in rows:
+            text = description or ""
+            # book() stores "<repair type>: <description>"; older rows have no type.
+            repair_type = next((kind for kind in REPAIR_TYPES if text.startswith(f"{kind}: ")), None)
+            appointments.append({
+                "appointment_id": appointment_id,
+                "time": appointment_time,
+                "repair_type": repair_type,
+                "description": text[len(repair_type) + 2:] if repair_type else text,
+                "status_id": status_id,
+            })
+        return Response.ok("Appointments retrieved.", {"appointments": appointments})
+
     @staticmethod
     def _dayState(day: date, booked_count: int, today: date) -> str:
         if day <= today:

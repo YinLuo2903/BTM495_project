@@ -40,6 +40,8 @@ def initialize_database(database_path: str | Path = DB_PATH) -> None:
     database = SQLiteQuery(database_path)
     _park_legacy_status_tables(database)
     _migrate_customer_names(database)
+    with database.transaction() as connection:
+        _add_customer_created_at(connection)
     with database.session() as connection:
         connection.executescript(
             Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
@@ -166,6 +168,18 @@ def _has_foreign_keys(session: SQLiteSession, table: str) -> bool:
 
 def _column_names(session: SQLiteSession, table: str) -> list[str]:
     return [row[1] for row in session.fetch_all(f"PRAGMA table_info({quote_identifier(table)})")]
+
+
+def _add_customer_created_at(session: SQLiteSession) -> None:
+    """Give existing customer tables the created_at column before schema.sql adds its trigger.
+
+    Customers saved before this have no known sign-up time and keep NULL.
+    """
+    if DatabaseTables.CUSTOMER in _table_names(session) and DatabaseColumns.CREATED_AT not in _column_names(session, DatabaseTables.CUSTOMER):
+        session.execute(
+            f"ALTER TABLE {quote_identifier(DatabaseTables.CUSTOMER)} "
+            f"ADD COLUMN {quote_identifier(DatabaseColumns.CREATED_AT)} DATETIME"
+        )
 
 
 def _add_image_columns(session: SQLiteSession) -> None:

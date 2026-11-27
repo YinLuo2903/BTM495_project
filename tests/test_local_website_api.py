@@ -875,7 +875,12 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
             "POST", "/api/my-appointments", token, {**booking, "time": "15:00", "repair_type": "Paint"}
         )
         self.assertEqual((status, body["message"]), (400, "Select a repair type."))
-        self.assertEqual(self._auth_json("GET", "/api/my-appointments", token)[0], 404)
+        status, body = self._auth_json("GET", "/api/my-appointments", token)
+        self.assertEqual(status, 200)
+        self.assertEqual([(a["time"], a["repair_type"], a["description"]) for a in body["appointments"]],
+                         [(f"{day.isoformat()} 14:00:00", "Gear Adjustment", "Chain skips on the smallest cog.")])
+        self.assertEqual(self._auth_json("GET", "/api/my-appointments", "")[0], 401)
+        self.assertEqual(self._auth_json("DELETE", "/api/my-appointments", token)[0], 404)
 
         _, body = self._json("GET", f"/api/appointments/availability?month={month}")
         self.assertEqual(

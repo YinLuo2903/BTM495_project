@@ -3,6 +3,7 @@ import {
   fetchAppointments, fetchCustomers, fetchDashboard, formatDate, fromDateInput, plural, statusName, toDateInput,
   type AdminAppointment, type AdminCustomer, type AdminOrder, type AdminPayment,
 } from "../../services/admin";
+import { stockStatus } from "../customer/addToCart";
 
 export type ModuleKey = "customers" | "events" | "appointments" | "orders" | "payments" | "inventory";
 export type Form = Record<string, string>;
@@ -344,11 +345,11 @@ export const paymentsModule: ModuleConfig<AdminPayment> = {
 
 // ---------------- inventory: full create, update, delete ----------------
 /** Same thresholds as the customer Items page: 5 or fewer is low stock. */
+/** Same wording and thresholds as the shop's stock labels (addToCart.tsx). */
 export function stockCell(stock: number | null): Cell {
   if (stock == null) return { text: "Not tracked", kind: "badge", badge: "adm-b-cancelled" };
-  if (stock === 0) return { text: "Out of stock", kind: "badge", badge: "adm-b-out" };
-  if (stock <= 5) return { text: `Low · ${stock}`, kind: "badge", badge: "adm-b-pending" };
-  return { text: `${stock} in stock`, kind: "badge", badge: "adm-b-completed" };
+  const status = stockStatus(stock);
+  return { text: status.label, kind: "badge", badge: { in: "adm-b-completed", low: "adm-b-pending", out: "adm-b-out" }[status.tone] };
 }
 
 const itemFormKeys: Record<string, (value: string) => [string, unknown] | null> = {
@@ -375,9 +376,9 @@ export const inventoryModule: ModuleConfig<Item> = {
   searchText: i => [i.name, i.category, i.brand, `#${i.item_id}`].join(" "),
   filters: [
     { label: "All", test: () => true },
-    { label: "In stock", test: i => i.stock_quantity != null && i.stock_quantity > 5 },
-    { label: "Low stock", test: i => i.stock_quantity != null && i.stock_quantity > 0 && i.stock_quantity <= 5 },
-    { label: "Out of stock", test: i => i.stock_quantity === 0 },
+    { label: "In stock", test: i => i.stock_quantity != null && stockStatus(i.stock_quantity).tone === "in" },
+    { label: "Low stock", test: i => i.stock_quantity != null && stockStatus(i.stock_quantity).tone === "low" },
+    { label: "Out of stock", test: i => i.stock_quantity != null && stockStatus(i.stock_quantity).tone === "out" },
     { label: "Not tracked", test: i => i.stock_quantity == null },
   ],
   columns: [

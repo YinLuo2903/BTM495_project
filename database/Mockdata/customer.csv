@@ -1,11 +1,11 @@
-customer_id,customer_code,first_name,last_name,email,phone,address,password_hash
-1,LPVR001,Emily,Roy,emily.roy@example.com,514-555-0201,"12 Rue Sherbrooke O, Montreal, QC H2X 1Y2",hash_cust_001
-2,LPVR002,Liam,Bouchard,liam.bouchard@example.com,514-555-0202,"88 Boulevard Saint-Laurent, Montreal, QC H2Y 2Y5",hash_cust_002
-3,LPVR003,Olivia,Lavoie,olivia.lavoie@example.com,438-555-0203,"7 Rue Rachel E, Montreal, QC H2W 1C3",hash_cust_003
-4,LPVR004,Noah,Fortin,noah.fortin@example.com,438-555-0204,"310 Avenue Mont-Royal E, Montreal, QC H2T 1P7",hash_cust_004
-5,LPVR005,Emma,Pelletier,emma.pelletier@example.com,514-555-0205,"54 Rue Notre-Dame O, Montreal, QC H2Y 1S7",hash_cust_005
-6,LPVR006,Lucas,Gauthier,lucas.gauthier@example.com,514-555-0206,"921 Rue Ontario E, Montreal, QC H2L 1P5",hash_cust_006
-7,LPVR007,Chloe,Morin,chloe.morin@example.com,438-555-0207,"15 Avenue Laurier O, Montreal, QC H2T 2N1",hash_cust_007
-8,LPVR008,Ethan,Cote,ethan.cote@example.com,514-555-0208,"602 Rue Beaubien E, Montreal, QC H2S 1S5",hash_cust_008
-9,LPVR009,Mia,Leblanc,mia.leblanc@example.com,514-555-0209,"77 Rue Wellington, Montreal, QC H3C 1T1",hash_cust_009
-10,LPVR010,Jacob,Simard,jacob.simard@example.com,438-555-0210,"240 Rue Masson, Montreal, QC H1Y 1V9",hash_cust_010
+customer_id,customer_code,first_name,last_name,email,phone,address,password_hash,created_at
+1,LPVR001,Emily,Roy,emily.roy@example.com,514-555-0201,"12 Rue Sherbrooke O, Montreal, QC H2X 1Y2",hash_cust_001,2026-01-13 14:00:00
+2,LPVR002,Liam,Bouchard,liam.bouchard@example.com,514-555-0202,"88 Boulevard Saint-Laurent, Montreal, QC H2Y 2Y5",hash_cust_002,2026-02-18 17:00:00
+3,LPVR003,Olivia,Lavoie,olivia.lavoie@example.com,438-555-0203,"7 Rue Rachel E, Montreal, QC H2W 1C3",hash_cust_003,2026-03-12 12:00:00
+4,LPVR004,Noah,Fortin,noah.fortin@example.com,438-555-0204,"310 Avenue Mont-Royal E, Montreal, QC H2T 1P7",hash_cust_004,2026-04-18 18:00:00
+5,LPVR005,Emma,Pelletier,emma.pelletier@example.com,514-555-0205,"54 Rue Notre-Dame O, Montreal, QC H2Y 1S7",hash_cust_005,2026-05-16 15:00:00
+6,LPVR006,Lucas,Gauthier,lucas.gauthier@example.com,514-555-0206,"921 Rue Ontario E, Montreal, QC H2L 1P5",hash_cust_006,2026-06-15 17:00:00
+7,LPVR007,Chloe,Morin,chloe.morin@example.com,438-555-0207,"15 Avenue Laurier O, Montreal, QC H2T 2N1",hash_cust_007,2026-07-12 18:00:00
+8,LPVR008,Ethan,Cote,ethan.cote@example.com,514-555-0208,"602 Rue Beaubien E, Montreal, QC H2S 1S5",hash_cust_008,2026-08-10 12:00:00
+9,LPVR009,Mia,Leblanc,mia.leblanc@example.com,514-555-0209,"77 Rue Wellington, Montreal, QC H3C 1T1",hash_cust_009,2026-09-01 18:00:00
+10,LPVR010,Jacob,Simard,jacob.simard@example.com,438-555-0210,"240 Rue Masson, Montreal, QC H1Y 1V9",hash_cust_010,2026-10-01 10:00:00

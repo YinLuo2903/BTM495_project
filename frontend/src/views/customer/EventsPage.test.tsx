@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { SLIDE_MS } from "../../components/Slideshow";
 import { EventsPage, parseEventDate } from "./EventsPage";
 
 const TODAY = new Date(2026, 10, 21, 9, 0);
@@ -68,6 +69,47 @@ describe("EventsPage", () => {
     expect(today.getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByRole("heading", { name: "Events in November" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Date to be announced" })).toBeTruthy();
+  });
+
+  it("opens the event named in ?id= (links from the home page slideshow)", async () => {
+    window.history.replaceState({}, "", "/views/customer/events.html?id=9");
+    mockFetch(() => ({ body: { status: "ok", events: baseEvents } }));
+    render(<EventsPage today={TODAY} />);
+    expect(await screen.findByRole("heading", { level: 2, name: "Tire Class" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "December 2026" })).toBeTruthy();
+    window.history.replaceState({}, "", "/views/customer/events.html");
+  });
+
+  it("slides between events with the arrows and follows on the calendar", async () => {
+    mockFetch(() => ({ body: { status: "ok", events: baseEvents } }));
+    render(<EventsPage today={TODAY} />);
+    expect(await screen.findByRole("heading", { level: 2, name: "Winter Bike Prep Workshop" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Next event" }));
+    expect(screen.getByRole("heading", { level: 2, name: "Black Friday Sale Event" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Next event" }));
+    expect(screen.getByRole("heading", { level: 2, name: "Tire Class" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "December 2026" })).toBeTruthy(); // the calendar followed
+    fireEvent.click(screen.getByRole("button", { name: "Previous event" }));
+    expect(screen.getByRole("heading", { level: 2, name: "Black Friday Sale Event" })).toBeTruthy();
+  });
+
+  it("auto-advances through upcoming events only, wrapping to the soonest", async () => {
+    vi.useFakeTimers();
+    try {
+      mockFetch(() => ({ body: { status: "ok", events: baseEvents } }));
+      render(<EventsPage today={TODAY} />);
+      await act(async () => { for (let i = 0; i < 10; i++) await Promise.resolve(); }); // let the fetches settle
+      expect(screen.getByRole("heading", { level: 2, name: "Winter Bike Prep Workshop" })).toBeTruthy();
+      act(() => { vi.advanceTimersByTime(SLIDE_MS); });
+      expect(screen.getByRole("heading", { level: 2, name: "Black Friday Sale Event" })).toBeTruthy();
+      act(() => { vi.advanceTimersByTime(SLIDE_MS); });
+      expect(screen.getByRole("heading", { level: 2, name: "Tire Class" })).toBeTruthy();
+      act(() => { vi.advanceTimersByTime(SLIDE_MS); });
+      // skips the past Halloween ride and goes back to the soonest open event
+      expect(screen.getByRole("heading", { level: 2, name: "Winter Bike Prep Workshop" })).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("switches events from the calendar and moves between months", async () => {

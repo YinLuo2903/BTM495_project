@@ -9,3 +9,73 @@ item_id,name,description,price,category,brand,image_path
 8,Floor Pump,High-pressure pump with gauge and dual valve head,49.00,Tools,Topeak,/uploads/962b7e1b388393aa7628b5b07900bf38.webp
 9,Disc Brake Pads,Semi-metallic replacement pads for hydraulic disc brakes,24.95,Components,SRAM,/uploads/98a48fc416483043e4e6330cecd73ac1.webp
 10,Hydration Backpack 2L,Lightweight cycling pack with 2L reservoir and storage pockets,89.99,Bags,CamelBak,/uploads/f10ed665b35a6a8d05b2038ea372d6b6.webp
+11,City Commuter Bike,Upright 7-speed city bike with fenders and rear rack,549.00,Bikes,Trek,/uploads/cb1d59922614c6aa811a9305319db049.webp
+12,Gravel Bike,Drop-bar gravel bike with wide tire clearance and disc brakes,1499.00,Bikes,Cannondale,/uploads/673bf66ef39f21128327356c9422ecde.webp
+13,"Kids Bike 20""",Lightweight 20-inch bike for riders aged 6 to 9,299.00,Bikes,Specialized,/uploads/ab47d5330aa88a6a68180eab871950a9.webp
+14,Folding Bike,Compact folding bike that fits under a desk,899.00,Bikes,Brompton,/uploads/bccd876e5311c194377135253ab1d215.webp
+15,Electric Bike,Pedal-assist e-bike with 60 km range,2499.00,Bikes,Gazelle,/uploads/5f803b66f2087b02b3d6fea66b800fe9.webp
+16,Fixed Gear Bike,Single-speed track-style bike with flip-flop hub,499.00,Bikes,State Bicycle,/uploads/8f917e6f47fce0ba63e51afae9b0d256.webp
+17,Cargo Bike,Long-tail cargo bike for groceries and kids,1899.00,Bikes,Tern,/uploads/57da859b90bc87ed7cc83a2f0753f179.webp
+18,Refurbished Vintage Road Bike,Steel-frame road bike rebuilt by our volunteers,349.00,Bikes,Peugeot,/uploads/1d8d92abd813048a529b63d972ab81db.webp
+19,Kids Helmet,Adjustable kids helmet with rear light,49.99,Safety Gear,Giro,/uploads/77d45109a7441d518ad59c2920413edf.webp
+20,Reflective Vest,High-visibility vest for night riding,24.99,Safety Gear,Proviz,/uploads/0e95b2e4f9205b064888bd3656dcacee.webp
+21,Cycling Gloves,Padded half-finger gloves,29.99,Safety Gear,Pearl Izumi,/uploads/8e239824f0d7684fc599082c20d9d05f.webp
+22,Cycling Glasses,Shatterproof glasses with clear and tinted lenses,59.99,Safety Gear,Oakley,/uploads/49f138c41dec5506694846f874eb5e6e.webp
+23,Bike Bell,Loud brass bell that fits most handlebars,14.99,Safety Gear,Spurcycle,/uploads/6934e84bd5f6884c1742956d48f2c375.webp
+24,Rear Radar Light,Rear light that warns of approaching cars,199.99,Safety Gear,Garmin,/uploads/76480be76f015b0f4bfc052ab2e3d11f.webp
+25,Knee Pads,Flexible knee pads for trail riding,54.99,Safety Gear,Fox,/uploads/474f1c366993b714862a1ec734eba8db.webp
+26,Full-Face Helmet,Downhill full-face helmet with removable chin bar,229.99,Safety Gear,Bell,/uploads/8509c37345e3e49ecfe697ec05101fa1.webp
+27,Bike Mirror,Handlebar-end mirror for traffic awareness,19.99,Safety Gear,Mirrycle,/uploads/b1a74a1fba79ad0c4e645a9b5d89cf22.webp
+28,Shimano 11-Speed Cassette,11-34T cassette for road and gravel,69.99,Components,Shimano,/uploads/baba8de6b917f64b6e9bfa18f07c84ed.webp
+29,Bike Chain 11-Speed,Durable 11-speed chain with quick link,39.99,Components,KMC,/uploads/df072eb905b1f15033fd89e604728508.webp
+30,Rear Derailleur,Smooth-shifting rear derailleur,89.99,Components,Shimano,/uploads/9a1ced6d9e7aecc7727f7164d40e2d7f.webp
+31,Crankset,"Two-ring crankset, 50/34T",189.99,Components,Shimano,/uploads/71ef80239dde370a76b3f25e58049d0a.webp
+32,Saddle,Ergonomic saddle with pressure-relief channel,59.99,Components,Brooks,/uploads/a8986239bb678001abdb80adfe0f2ee3.webp
+33,Handlebar,"Aluminum flat handlebar, 720 mm",34.99,Components,Race Face,/uploads/b0efac83139ef9ea1e63e5c399acbf4f.webp
+34,Disc Brake Rotor,160 mm six-bolt brake rotor,29.99,Components,SRAM,/uploads/76e8988c12952d4790313478ae42a831.webp
+35,Front Suspension Fork,"100 mm travel air fork for 29"" wheels",399.99,Components,RockShox,/uploads/835917ff39dbbe60c36e0d4e26d03f9b.webp
+36,Inner Tube 700c,Presta-valve inner tube for road bikes,8.99,Tires & Tubes,Continental,/uploads/1a4fab2343dc5abf04018a0b6107e992.webp
+37,"Mountain Bike Tire 29""",Knobby trail tire for loose ground,69.99,Tires & Tubes,Maxxis,/uploads/7609cceadd079ece44358ef4ccd0f8ce.webp
+38,Puncture Repair Kit,"Patches, glue and tire levers in a pocket box",9.99,Tires & Tubes,Park Tool,/uploads/33098dc7c0c5413dc1dd0d8576555fd4.webp
+39,Tire Levers (3 pack),Strong nylon levers that will not scratch rims,6.99,Tires & Tubes,Pedro's,/uploads/5c67f4edbc5be907ee462e17d8b5a226.webp
+40,Tubeless Sealant,Seals punctures up to 6 mm,19.99,Tires & Tubes,Stan's NoTubes,/uploads/71f10026f9eef2d5b1c8cbff117fe89f.webp
+41,"City Tire 26""",Puncture-resistant tire with reflective sidewall,39.99,Tires & Tubes,Schwalbe,/uploads/05bd38ed72c9e6749a1444c41b8cb2b7.webp
+42,Winter Studded Tire,Steel-studded tire for icy Montreal winters,89.99,Tires & Tubes,Schwalbe,/uploads/7534c6dbfd24c9ee3ce24d93110f6818.webp
+43,Valve Adapter Set,Presta to Schrader adapters,4.99,Tires & Tubes,Topeak,/uploads/9b7b95c60d6cd1a09376fe14f60e1fef.webp
+44,Tubular Road Tire,Lightweight tubular tire for racing,79.99,Tires & Tubes,Vittoria,/uploads/14f9acc8068b17da3f9d12e7f7a2b486.webp
+45,Degreaser 500ml,Biodegradable drivetrain degreaser,14.99,Maintenance,Muc-Off,/uploads/cb2c1ab295f9a1d7cb0c245d12acb26f.webp
+46,Bike Wash Brush Set,"Five brushes for frame, chain and wheels",24.99,Maintenance,Park Tool,/uploads/cbec57e3955ac5fc2d84bc6d91f7d43a.webp
+47,Grease Tub,Waterproof bearing grease,12.99,Maintenance,Park Tool,/uploads/81715ffdb811c118332bcc1ba86efa82.webp
+48,Chain Checker,Measures chain wear in seconds,14.99,Maintenance,Park Tool,/uploads/17d2e21ddd0aa6b79ef7a77811079441.webp
+49,Bike Stand (Home),Folding repair stand for home maintenance,149.99,Maintenance,Feedback Sports,/uploads/bdac29bf15ea81d8398d39a42b594145.webp
+50,Brake Cable Kit,Inner and outer cables with ferrules,19.99,Maintenance,Jagwire,/uploads/03e9e70b2bd13dcccc8911375fde1bc0.webp
+51,Handlebar Tape,Cushioned bar tape with end plugs,24.99,Maintenance,Lizard Skins,/uploads/e68f9d15d2471c644e77933b34a00e6d.webp
+52,Frame Protection Tape,Clear film that protects paint from scratches,17.99,Maintenance,3M,/uploads/16380680e270fa4a5df22a337c015052.webp
+53,Workshop Tune-Up Voucher,One guided tune-up session with a volunteer,40.00,Maintenance,LPVR,/uploads/107d94c4c0f8c15cc57dc10eb5474f0a.webp
+54,Water Bottle Cage,Lightweight aluminum bottle cage,12.99,Accessories,Elite,/uploads/a219150758a73f13c15158dae8fc7e02.webp
+55,Water Bottle 750ml,BPA-free squeeze bottle,9.99,Accessories,CamelBak,/uploads/97b9f4f875a99c729bec771ba4a33ba5.webp
+56,Bike Computer,GPS bike computer with navigation,249.99,Accessories,Garmin,/uploads/285fbd4273238819dc7977994974d49a.webp
+57,U-Lock,Hardened steel U-lock with mount,69.99,Accessories,Kryptonite,/uploads/52edaead09aa20efe4a9e2ebfb49419c.webp
+58,Kickstand,Adjustable center kickstand,24.99,Accessories,Pletscher,/uploads/e79362e376248e51ed37d6a0e74a986a.webp
+59,Fenders Set,Full-coverage front and rear fenders,39.99,Accessories,SKS,/uploads/03a8168708bcdc1df9d7187f3124ba42.webp
+60,Phone Mount,Secure handlebar phone mount,29.99,Accessories,Quad Lock,/uploads/30dee7421da0c3fa4af37f843b99430e.webp
+61,Front Basket,Wicker basket with quick-release bracket,44.99,Accessories,Basil,/uploads/6aad607bd8eb020d18763cca0fdc81db.webp
+62,Rear Rack,"Aluminum rack for panniers, 25 kg load",49.99,Accessories,Topeak,/uploads/ab01cc44f40745c15b43692c25c34545.webp
+63,Multi-Tool 18-in-1,"Pocket tool with hex keys, chain breaker and screwdrivers",34.99,Tools,Crankbrothers,/uploads/52a37caef0f546d23e100cd4743f1d1d.webp
+64,Hex Key Set,"Ball-end hex keys, 1.5 to 10 mm",24.99,Tools,Park Tool,/uploads/b02bb5428cc9c5752e0e34c15eb71a03.webp
+65,Torque Wrench,"Click-type torque wrench, 2 to 14 Nm",89.99,Tools,Park Tool,/uploads/421db69ab0fdbb408eaa9191fae18af3.webp
+66,Chain Tool,Workshop chain breaker for 5 to 12-speed,29.99,Tools,Park Tool,/uploads/3b40071cd4edece624fc71ea51a8efc1.webp
+67,Cassette Lockring Tool,Removes Shimano and SRAM cassettes,12.99,Tools,Park Tool,/uploads/58c528c4ead8c4cedebaff36b5b4ad54.webp
+68,Spoke Wrench,Three-size spoke wrench for wheel truing,9.99,Tools,Park Tool,/uploads/06d9ac88a21f037ef3ea44460d88b6e5.webp
+69,Mini Pump,"Frame-mounted mini pump, 100 psi",29.99,Tools,Lezyne,/uploads/40503e49b0b74caa5863537e565ee89c.webp
+70,Cable Cutters,Clean cuts on brake and shift cables,39.99,Tools,Park Tool,/uploads/c62afe9b2d26205d1123e23078c7c148.webp
+71,Truing Stand,Home wheel-truing stand,129.99,Tools,Park Tool,/uploads/6599338f7577c0a4c3f26f83732e5b7f.webp
+72,Saddle Bag,Small under-seat bag for a tube and tools,24.99,Bags,Topeak,/uploads/4af7bd8f122dd7f4a483a153fd1eb199.webp
+73,Pannier Pair,"Waterproof rear panniers, 40 L total",149.99,Bags,Ortlieb,/uploads/12af67f9e6777dfe41ed1c4afc5585ed.webp
+74,Handlebar Bag,Quick-release bag with map window,59.99,Bags,Ortlieb,/uploads/85196c96f9ca16ee4640b68d9aede19d.webp
+75,Frame Bag,Top-tube frame bag for snacks and phone,34.99,Bags,Revelate,/uploads/ce8e7a3ac0a249ee1161348ca7785d44.webp
+76,Messenger Bag,Waterproof courier-style shoulder bag,99.99,Bags,Chrome,/uploads/00d409c1da9401e50493d6c2cb4e975f.webp
+77,Cycling Backpack 20L,Ventilated backpack with rain cover,89.99,Bags,Osprey,/uploads/28bcc2911f3e43269f5e385907585459.webp
+78,Bikepacking Seat Pack,Large seat pack for overnight trips,119.99,Bags,Apidura,/uploads/e9fadf9050b8c8973072735cb4dfa4b5.webp
+79,Bike Transport Bag,Padded bag for flights and trains,249.99,Bags,Evoc,/uploads/427499410e8a3bf41f961bff5d41610b.webp
+80,Waist Pack,Hip pack with water bottle holder,39.99,Bags,Dakine,/uploads/fa2deb1e5ee64bb28a4dda8bb6f655c1.webp

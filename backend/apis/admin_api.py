@@ -4,7 +4,8 @@ Events, inventory, orders and payments already have routes of their own
 (/api/events, /api/inventory, /api/dashboard, /api/orders, /api/payments);
 these cover what the admin dashboard needs on top of them:
 
-- customers: list (with order and appointment counts) and delete;
+- customers: list (with order and appointment counts and sign-up time) and delete;
+- inventory-history: every stock change, for the dashboard's stock-over-time chart;
 - appointments: list, create, update and delete.
 
 Customers, orders and payments come from sign-up and checkout, so the admin
@@ -31,7 +32,7 @@ _APPOINTMENT_FIELDS = {
 }
 
 _CUSTOMERS_SQL = (
-    "SELECT c.customer_id, c.customer_code, c.first_name, c.last_name, c.email, c.phone, c.address,"
+    "SELECT c.customer_id, c.customer_code, c.first_name, c.last_name, c.email, c.phone, c.address, c.created_at,"
     " (SELECT COUNT(*) FROM orders o WHERE o.customer_id = c.customer_id),"
     " (SELECT COUNT(*) FROM appointment a WHERE a.customer_id = c.customer_id)"
     " FROM customer c"
@@ -69,6 +70,8 @@ def handle_admin_route(
                 return 200, {"status": "ok", "customers": _list_customers(database)}
             if method == "DELETE" and record_id is not None:
                 return _delete_customer(database, record_id)
+        if resource == "inventory-history" and method == "GET" and len(rest) == 1:
+            return 200, {"status": "ok", "history": _inventory_history(database)}
         if resource == "appointments":
             if method == "GET" and len(rest) == 1:
                 return 200, {"status": "ok", "appointments": _list_appointments(database)}
@@ -83,10 +86,21 @@ def handle_admin_route(
     return _error(404, "Not found.")
 
 
+# ---------- stock history: every quantity change, oldest first (dashboard chart) ----------
+
+def _inventory_history(database: SQLiteQuery) -> list[dict[str, object]]:
+    rows = database.fetch_all(
+        "SELECT item_id, old_quantity, new_quantity, created_at FROM inventory_history"
+        " ORDER BY created_at, history_id",
+        read_only=True,
+    )
+    return [{"item_id": i, "old_quantity": old, "new_quantity": new, "created_at": at} for i, old, new, at in rows]
+
+
 # ---------- customers: view and delete only ----------
 
 def _customer_json(row: tuple) -> dict[str, object]:
-    customer_id, code, first, last, email, phone, address, orders, appointments = row
+    customer_id, code, first, last, email, phone, address, created_at, orders, appointments = row
     return {
         "customer_id": customer_id,
         "customer_code": code,
@@ -95,6 +109,7 @@ def _customer_json(row: tuple) -> dict[str, object]:
         "email": email,
         "phone": phone or "",
         "address": address or "",
+        "created_at": created_at,
         "order_count": orders,
         "appointment_count": appointments,
     }

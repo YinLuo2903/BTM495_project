@@ -3,13 +3,6 @@
  * Stacks into one column on narrow screens.
  */
 
-.ev-page {
-  --ev-brand-text: #b34a0c; /* brand orange darkened for 4.5:1 text contrast */
-  --ev-tint: #fff1e8;
-  --ev-success: #1d6b34;
-  --ev-danger: #a3290f;
-}
-
 .ev-header {
   margin-bottom: 28px;
 }

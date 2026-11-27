@@ -15,13 +15,6 @@
   gap: 24px;
 }
 
-.site-footer h3 {
-  color: var(--ink);
-  margin: 0 0 8px;
-  font-size: 1.05rem;
-  letter-spacing: 0.5px;
-}
-
 .site-footer h4 {
   color: var(--brand);
   margin: 0 0 8px;
@@ -32,16 +25,18 @@
 
 .site-footer p {
   margin: 0;
+  color: var(--muted);
   line-height: 1.7;
 }
 
 .site-footer a {
-  color: var(--ink);
+  color: var(--ev-brand-text);
+  font-weight: 600;
   text-decoration: none;
 }
 
 .site-footer a:hover {
-  color: var(--brand);
+  color: var(--brand-dark);
   text-decoration: underline;
 }
 

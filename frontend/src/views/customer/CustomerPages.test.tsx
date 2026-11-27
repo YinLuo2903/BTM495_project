@@ -19,15 +19,6 @@ function mockResponse(body: object, ok = true) {
 }
 
 describe("customer widgets", () => {
-  it("limits the home event widget and links to the full event list", async () => {
-    mockResponse({ status: "ok", events });
-    render(<CustomerPage page="index" />);
-    expect(await screen.findByText("Event 1")).toBeTruthy();
-    expect(screen.getByText("Event 3")).toBeTruthy();
-    expect(screen.queryByText("Event 4")).toBeNull();
-    expect(screen.getByRole("link", { name: "View all events" }).getAttribute("href")).toBe("events.html");
-  });
-
   it("renders the events page and its empty and error states", async () => {
     mockResponse({ status: "ok", events });
     const view = render(<CustomerPage page="events" />);
@@ -95,5 +86,28 @@ describe("customer widgets", () => {
     expect(screen.getByRole("button", { name: "Hide password" }).getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(screen.getByRole("button", { name: "Hide password" }));
     expect(input.getAttribute("type")).toBe("password");
+  });
+
+  it("fills in the demo admin or customer account and signs in with it", async () => {
+    const fetchMock = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ status: "ok", user: { name: "Admin", is_admin: true }, token: "a".repeat(43), expires_at: 4_102_444_800 }) }));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("localStorage", { getItem: () => null, setItem() {}, removeItem() {} });
+    const assign = vi.fn();
+    vi.stubGlobal("location", { ...window.location, assign });
+    render(<CustomerPage page="login" />);
+    const email = screen.getByLabelText("Email") as HTMLInputElement;
+    const password = screen.getByLabelText("Password", { selector: "input" }) as HTMLInputElement;
+    expect([email.value, password.value]).toEqual(["login@example.com", "1234"]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Fill in admin" }));
+    expect([email.value, password.value]).toEqual(["admin@lpvr.com", "123456789"]);
+    expect(document.activeElement?.textContent).toBe("Sign in");
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    await vi.waitFor(() => expect(assign).toHaveBeenCalledWith("/views/admin/index.html"));
+    const [, options] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(JSON.parse(String(options.body))).toEqual({ email: "admin@lpvr.com", password: "123456789" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Fill in customer" }));
+    expect([email.value, password.value]).toEqual(["login@example.com", "1234"]);
   });
 });

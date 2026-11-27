@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { Brand } from "./Brand";
 import { photoStyle } from "./Photo";
 import { SiteNav } from "./SiteNav";
 import { CART_CHANGE_EVENT, fetchCart, type CartSummary } from "../services/cart";
@@ -51,10 +52,12 @@ export function Layout({ children }: { children: ReactNode }) {
     <SiteNav session={session} cartCount={cartCount} message={message} busy={busy} onSignOut={() => void logout()} />
     {children}
     <footer className="site-footer photo-footer" style={photoStyle("footer-team")}>
-      <div className="footer-grid"><div><h3>LE PETIT VÉLO ROUGE</h3><p>Located in: Concordia University - Loyola Campus<br />
-        7141 Rue Sherbrooke O PS 145, Montréal, QC H4B 2B9<br />
-        <a href="mailto:petitvelorouge@gmail.com">petitvelorouge@gmail.com</a><br />
-        <a href="https://www.instagram.com/LPVR_lepetitvelorouge" target="_blank" rel="noreferrer">@LPVR_lepetitvelorouge</a></p></div></div>
+      <div className="footer-grid">
+        <div><Brand /></div>
+        <div><h4>Visit</h4><p>Concordia University · Loyola Campus<br />7141 Rue Sherbrooke O, PS 145<br />Montréal, QC H4B 2B9</p></div>
+        <div><h4>Contact</h4><p><a href="mailto:petitvelorouge@gmail.com">petitvelorouge@gmail.com</a><br />
+          <a href="https://www.instagram.com/LPVR_lepetitvelorouge" target="_blank" rel="noreferrer">@LPVR_lepetitvelorouge</a></p></div>
+      </div>
       <div className="footer-bottom"><p>© 2026 LE PETIT VÉLO ROUGE · Site code under the MIT License · <a href="/views/customer/credits.html">Photo credits</a></p></div>
     </footer>
   </>;

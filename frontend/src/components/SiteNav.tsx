@@ -11,10 +11,16 @@ const ADMIN_HOME_URL = "/views/admin/index.html";
 
 // Profile and Create account are not menu links: they live in the account area
 // (signed-in name → My Profile; guests see Sign In · Create account).
+const EVENTS_URL = "/views/customer/events.html";
+const APPOINTMENTS_URL = "/views/customer/appointments.html";
 const pageLinks: [string, string][] = [
-  ["Home", HOME_URL], ["Items", ITEMS_URL],
-  ["Events", "/views/customer/events.html"], ["Appointments", "/views/customer/appointments.html"],
+  ["Home", HOME_URL], ["Items", ITEMS_URL], ["Events", EVENTS_URL], ["Appointments", APPOINTMENTS_URL],
 ];
+/** Fixed sub-menus; Items gets its categories from the inventory instead. */
+const subLinks: Record<string, [string, string][]> = {
+  [EVENTS_URL]: [["My events", `${EVENTS_URL}#mine`], ["Event calendar", `${EVENTS_URL}#calendar`]],
+  [APPOINTMENTS_URL]: [["My appointments", `${APPOINTMENTS_URL}#mine`], ["Book a repair", `${APPOINTMENTS_URL}#book`]],
+};
 
 const isCurrent = (href: string) => window.location.pathname === href
   || (href === HOME_URL && ["/views/customer/", "/views/customer"].includes(window.location.pathname));
@@ -84,12 +90,17 @@ export function SiteNav({ session, cartCount, message, busy, onSignOut }: {
       </button>
       <div id="nav-panel" className={`nav-panel${panelOpen ? " is-open" : ""}`}>
         <ul className="nav-menu">
-          {pageLinks.map(link => link[1] === ITEMS_URL
-            ? <Dropdown key={link[1]} id="nav-items-menu" label="Items" trigger={pageLink(link)} open={openMenu === "items"} onToggle={() => toggle("items")}>
-              <li><a href={ITEMS_URL}>All items</a></li>
-              {categories.map(category => <li key={category}><a href={`${ITEMS_URL}?q=${encodeURIComponent(category)}`}>{category}</a></li>)}
-            </Dropdown>
-            : <li key={link[1]}>{pageLink(link)}</li>)}
+          {pageLinks.map(([label, href]) => {
+            const items: [string, string][] | undefined = href === ITEMS_URL
+              ? [["All items", ITEMS_URL], ...categories.map((category): [string, string] => [category, `${ITEMS_URL}?q=${encodeURIComponent(category)}`])]
+              : subLinks[href];
+            const name = label.toLowerCase();
+            return items
+              ? <Dropdown key={href} id={`nav-${name}-menu`} label={label} trigger={pageLink([label, href])} open={openMenu === name} onToggle={() => toggle(name)}>
+                {items.map(([text, link]) => <li key={link}><a href={link} onClick={() => setOpenMenu(null)}>{text}</a></li>)}
+              </Dropdown>
+              : <li key={href}>{pageLink([label, href])}</li>;
+          })}
         </ul>
         <ul className="nav-actions">
           <li><span className="nav-session-status" role="status" aria-live="polite">{message}</span></li>

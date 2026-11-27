@@ -4,6 +4,12 @@
   --brand: #f26a1b;
   --brand-dark: #c9540f;
 
+  /* Status colours (stock, registration, errors), shared by every page */
+  --ev-brand-text: #b34a0c; /* brand orange darkened for 4.5:1 text contrast */
+  --ev-tint: #fff1e8;
+  --ev-success: #1d6b34;
+  --ev-danger: #a3290f;
+
   /* Text Colors */
   --ink: #111111;
   --muted: #666666;

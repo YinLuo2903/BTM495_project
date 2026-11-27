@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Agenda, eventEntries } from "../../components/Agenda";
+import { useSlideshow } from "../../components/Slideshow";
 import { api, errorMessage, type ShopEvent } from "../../services/api";
 import { SessionApiError, sessionApi } from "../../services/session";
 
@@ -36,10 +38,22 @@ function isOpen(event: CalendarEvent, today: Date): boolean {
   return (event.status_id == null || event.status_id === 1) && !isPast(event, today);
 }
 
-/** The next open event from today, else the most recent dated one, else the first. */
+function datedInOrder<T extends ShopEvent>(events: T[]): (T & { date: Date })[] {
+  return events.map(event => ({ ...event, date: parseEventDate(event.event_date_time) }))
+    .filter((event): event is T & { date: Date } => event.date !== null)
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
+}
+
+/** Open events from today on, soonest first (the home page slideshow shows these). */
+export function upcomingEvents(events: ShopEvent[], today = new Date()): (CalendarEvent & { date: Date })[] {
+  return datedInOrder(events).filter(event => isOpen(event, today));
+}
+
+/** The event named in ?id=, else the next open event, else the most recent dated one, else the first. */
 function defaultEvent(events: CalendarEvent[], today: Date): CalendarEvent | undefined {
-  const dated = events.filter(event => event.date).sort((a, b) => a.date!.getTime() - b.date!.getTime());
-  return dated.find(event => isOpen(event, today)) ?? dated[dated.length - 1] ?? events[0];
+  const linked = Number(new URLSearchParams(window.location.search).get("id"));
+  const dated = datedInOrder(events);
+  return events.find(event => event.event_id === linked) ?? dated.find(event => isOpen(event, today)) ?? dated[dated.length - 1] ?? events[0];
 }
 
 function CalendarIcon() {
@@ -120,6 +134,32 @@ export function EventsPage({ today = new Date() }: { today?: Date }) {
     setJustRegistered(false);
   }
 
+  // The details card is a slider over the dated events, in calendar order. It auto-advances
+  // through the upcoming open ones (like the home page) and the calendar follows along.
+  const ordered = useMemo(() => datedInOrder(events ?? []), [events]);
+  const current = ordered.findIndex(event => event.event_id === selectedId);
+  const nextUpcoming = (from: number) => {
+    const later = ordered.findIndex((event, n) => n > from && isOpen(event, today));
+    return later >= 0 ? later : ordered.findIndex(event => isOpen(event, today));
+  };
+  const slider = useSlideshow({
+    count: ordered.length,
+    index: current,
+    onChange: n => {
+      const event = ordered[n];
+      select(event);
+      setMonth(new Date(event.date.getFullYear(), event.date.getMonth(), 1));
+    },
+    next: nextUpcoming,
+    // Keep still while someone is registering or reading a message.
+    autoplay: current >= 0 && isOpen(ordered[current], today) && !busy && !needsSignIn && !justRegistered && !actionError,
+  });
+  /** Calendar and list clicks slide to the event (and pause autoplay); undated ones just show. */
+  const pick = (event: CalendarEvent) => {
+    const n = ordered.findIndex(candidate => candidate.event_id === event.event_id);
+    if (n >= 0) slider.go(n); else select(event);
+  };
+
   async function toggleRegistration(register: boolean) {
     if (!selected || busy) return;
     setActionError("");
@@ -152,6 +192,18 @@ export function EventsPage({ today = new Date() }: { today?: Date }) {
     }
   }
 
+  const details = (event: CalendarEvent) => <EventDetails
+    event={event}
+    today={today}
+    registered={myEventIds?.includes(event.event_id) ?? false}
+    busy={busy}
+    justRegistered={justRegistered}
+    needsSignIn={needsSignIn}
+    error={actionError}
+    onRegister={() => void toggleRegistration(true)}
+    onCancel={() => void toggleRegistration(false)}
+  />;
+
   if (loadError) {
     return <section className="card"><h1>Events &amp; Workshops</h1><p className="error" role="alert">{loadError}</p></section>;
   }
@@ -161,19 +213,24 @@ export function EventsPage({ today = new Date() }: { today?: Date }) {
       <h1>Events &amp; Workshops</h1>
       <p>Explore upcoming bike rides, workshops, and community events. Select a date to view event details and register.</p>
     </header>
-    {!events ? <p role="status">Loading events…</p> : <div className="ev-layout">
-      <section className="ev-card ev-details" aria-labelledby="ev-title">
-        {selected ? <EventDetails
-          event={selected}
-          today={today}
-          registered={myEventIds?.includes(selected.event_id) ?? false}
-          busy={busy}
-          justRegistered={justRegistered}
-          needsSignIn={needsSignIn}
-          error={actionError}
-          onRegister={() => void toggleRegistration(true)}
-          onCancel={() => void toggleRegistration(false)}
-        /> : <div className="ev-empty"><h2 id="ev-title">No events available.</h2><p>Check back soon for new rides and workshops.</p></div>}
+    {events && <Agenda id="mine" title="Your events" empty="You have not joined any upcoming events yet."
+      guest="Sign in to see the events you joined."
+      // A failed lookup is already reported below, so the strip stays hidden then.
+      state={signedOut ? { kind: "guest" } : myEventIds ? { kind: "ready", value: eventEntries(events, myEventIds) } : { kind: "loading" }} />}
+    {!events ? <p role="status">Loading events…</p> : <div className="ev-layout" id="calendar">
+      <section className="ev-card ev-details" aria-labelledby="ev-title" aria-roledescription="carousel" {...slider.holder}>
+        {ordered.length > 1 && current >= 0 && <div className="ev-slide-controls">
+          <button type="button" className="sc-btn" aria-label="Previous event" onClick={() => slider.go(current - 1)}>‹</button>
+          <button type="button" className="sc-btn" aria-label="Next event" onClick={() => slider.go(current + 1)}>›</button>
+        </div>}
+        {selected ? <div className="sc-track ev-track" {...slider.swipe}>
+          {current < 0 ? details(selected) : ordered.map((event, n) => {
+            const className = slider.slideClass(n);
+            // Only the shown event and the one sliding out are rendered.
+            return className === "sc-slide" ? null : <div key={event.event_id} className={className}
+              aria-hidden={n !== current} inert={n !== current}>{details(event)}</div>;
+          })}
+        </div> : <div className="ev-empty"><h2 id="ev-title">No events available.</h2><p>Check back soon for new rides and workshops.</p></div>}
       </section>
 
       <section className="ev-card ev-calendar" aria-labelledby="ev-cal-title">
@@ -183,15 +240,15 @@ export function EventsPage({ today = new Date() }: { today?: Date }) {
           events={monthEvents}
           selectedId={selectedId}
           onMonth={offset => setMonth(new Date(month.getFullYear(), month.getMonth() + offset, 1))}
-          onSelect={select}
+          onSelect={pick}
         />
         <div className="ev-month-list">
           <h3>Events in {month.toLocaleDateString("en-US", { month: "long" })}</h3>
-          {monthEvents.length ? <EventList events={monthEvents} today={today} selectedId={selectedId} myEventIds={myEventIds} onSelect={select} />
+          {monthEvents.length ? <EventList events={monthEvents} today={today} selectedId={selectedId} myEventIds={myEventIds} onSelect={pick} />
             : <p className="ev-muted">No events scheduled this month.</p>}
           {undated.length > 0 && <>
             <h3>Date to be announced</h3>
-            <EventList events={undated} today={today} selectedId={selectedId} myEventIds={myEventIds} onSelect={select} />
+            <EventList events={undated} today={today} selectedId={selectedId} myEventIds={myEventIds} onSelect={pick} />
           </>}
         </div>
       </section>

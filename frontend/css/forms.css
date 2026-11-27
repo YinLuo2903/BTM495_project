@@ -114,10 +114,35 @@
 }
 
 .login-demo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
   margin-top: 24px;
   padding-top: 16px;
   border-top: 1px solid var(--line);
   font-size: 13px;
+}
+
+.login-demo .muted {
+  margin-right: auto;
+}
+
+.login-card .login-fill {
+  min-height: 34px;
+  padding: 6px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  background: #fff;
+  box-shadow: none;
+  font-weight: 700;
+}
+
+.login-card .login-fill:hover:not(:disabled) {
+  border-color: var(--brand);
+  background: var(--ev-tint);
+  box-shadow: none;
 }
 
 .login-signup {

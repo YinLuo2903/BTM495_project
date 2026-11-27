@@ -57,6 +57,19 @@ class AppointmentBookingAPITests(unittest.TestCase):
                 "WHERE description != 'Existing'"
             ).fetchall()
 
+    def test_lists_a_customers_appointments_oldest_first_with_the_repair_type(self) -> None:
+        self.assertTrue(self.api.book(10, "2026-11-30", "11:00", "Brake Repair", "Rear brake squeals.").success)
+        result = self.api.forCustomer(10)
+        self.assertTrue(result.success)
+        listed = result.data["appointments"]
+        self.assertEqual([a["time"] for a in listed], sorted(a["time"] for a in listed))
+        booked = listed[-1]
+        self.assertEqual((booked["repair_type"], booked["description"], booked["status_id"]),
+                         ("Brake Repair", "Rear brake squeals.", StatusID.PENDING))
+        self.assertEqual((listed[0]["repair_type"], listed[0]["description"]), (None, "Existing"))
+        self.assertEqual(self.api.forCustomer(99).data["appointments"], [])
+        self.assertFalse(self.api.forCustomer(0).success)
+
     def test_fixed_schedule_is_monday_wednesday_friday_hourly_10_to_16(self) -> None:
         self.assertEqual(OPEN_WEEKDAYS, {0, 2, 4})
         self.assertEqual(SLOT_MINUTES, 60)

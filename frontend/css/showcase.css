@@ -31,7 +31,7 @@
   gap: 8px;
 }
 
-.sc .sc-btn {
+:is(.sc, .ev-details) .sc-btn {
   display: inline-grid;
   place-items: center;
   width: 40px;
@@ -47,7 +47,7 @@
   transition: background-color 160ms ease, transform 160ms ease, border-color 160ms ease;
 }
 
-.sc .sc-btn:hover:not(:disabled) {
+:is(.sc, .ev-details) .sc-btn:hover:not(:disabled) {
   border-color: var(--brand);
   background: rgb(242 106 27 / 10%);
   box-shadow: none;
@@ -156,6 +156,22 @@
   gap: 14px;
 }
 
+.sc-cta {
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 24px;
+  border-radius: 999px;
+  color: var(--ink);
+  background: var(--brand);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.sc-cta:hover {
+  background: var(--brand-dark);
+}
+
 .sc-more {
   color: var(--ink);
   font-weight: 700;
@@ -262,3 +278,26 @@
 
 @keyframes sc-fade-in { from { opacity: 0; } }
 @keyframes sc-fade-out { to { opacity: 0; visibility: hidden; } }
+
+/* Events page: the details card slides between events; arrows sit on the photo. */
+.ev-details {
+  position: relative;
+}
+
+.ev-track .sc-slide {
+  display: block;
+}
+
+.ev-slide-controls {
+  position: absolute;
+  top: 34px;
+  right: 34px;
+  z-index: 2;
+  display: flex;
+  gap: 8px;
+}
+
+.ev-slide-controls .sc-btn {
+  background: rgb(255 255 255 / 90%);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 15%);
+}

@@ -797,9 +797,9 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
     def _appointments(self, method: str) -> bool:
         """Serve appointment booking; return False when the path is not one of its routes.
 
-        GET /api/appointments/availability?month=YYYY-MM is public. POST
-        /api/my-appointments books for the signed-in customer, taken from the
-        session token, never from the request body.
+        GET /api/appointments/availability?month=YYYY-MM is public. GET
+        /api/my-appointments lists, and POST books, for the signed-in customer,
+        taken from the session token, never from the request body.
         """
         request = urlsplit(self.path)
         if request.path == "/api/appointments/availability" and method == "GET":
@@ -826,13 +826,23 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
 
         if request.path != "/api/my-appointments":
             return False
-        if method != "POST":
+        if method not in ("GET", "POST"):
             self._send_json({"status": "error", "message": "Not found."}, 404)
             return True
         customer_id = self._session_customer_id(
             "Sign in with a customer account to book an appointment."
+            if method == "POST" else "Sign in with a customer account to see your appointments."
         )
         if customer_id is None:
+            return True
+        if method == "GET":
+            try:
+                result = AppointmentBookingAPI(DB_PATH).forCustomer(customer_id)
+            except sqlite3.Error:
+                logger.exception("Could not load appointments")
+                self._send_json({"status": "error", "message": "Database error."}, 500)
+                return True
+            self._send_json({"status": "ok", **result.data}, 200)
             return True
         try:
             payload = read_json_object(

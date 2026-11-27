@@ -21,7 +21,7 @@ describe("photo credits", () => {
   it("links each Creative Commons credit to its license", () => {
     for (const credit of [...PRODUCT_CREDITS, ...EVENT_CREDITS]) {
       expect(credit.licenseUrl, credit.file).toMatch(/^https:\/\/creativecommons\.org\//);
-      expect(credit.source, credit.file).toMatch(/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/);
+      expect(credit.source, credit.file).toMatch(/^https:\/\/(commons\.wikimedia\.org\/wiki\/File:|www\.flickr\.com\/photos\/)/);
     }
   });
 });

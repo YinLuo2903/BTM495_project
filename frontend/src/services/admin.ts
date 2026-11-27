@@ -15,6 +15,8 @@ export interface AdminCustomer {
   email: string;
   phone: string;
   address: string;
+  /** Sign-up time, "YYYY-MM-DD HH:MM:SS"; null for accounts older than tracking. */
+  created_at: string | null;
   order_count: number;
   appointment_count: number;
 }
@@ -57,6 +59,18 @@ export function fetchDashboard() {
 
 export function fetchCustomers() {
   return api<{ customers: AdminCustomer[] }>("/api/admin/customers").then(data => data.customers);
+}
+
+/** One stock change for an item (oldest first from the server). */
+export interface StockChange {
+  item_id: number;
+  old_quantity: number | null;
+  new_quantity: number;
+  created_at: string;
+}
+
+export function fetchStockHistory() {
+  return api<{ history: StockChange[] }>("/api/admin/inventory-history").then(data => data.history);
 }
 
 export function fetchAppointments() {

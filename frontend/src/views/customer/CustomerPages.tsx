@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { getSession, sessionApi, signIn, type Session } from "../../services/session";
-import { api, errorMessage, type CustomerProfile, type ShopEvent } from "../../services/api";
+import { api, errorMessage, type CustomerProfile } from "../../services/api";
 import { Brand } from "../../components/Brand";
 import { PhotoBand, photoStyle } from "../../components/Photo";
 import { AppointmentsPage } from "./AppointmentsPage";
@@ -10,36 +10,22 @@ import { CreditsPage } from "./CreditsPage";
 import { EventsPage } from "./EventsPage";
 import { ItemDetailPage } from "./ItemDetailPage";
 import { ItemsPage } from "./ItemsPage";
+import { NextUp } from "../../components/Agenda";
+import { EventShowcase } from "./EventShowcase";
 import { ProductShowcase } from "./ProductShowcase";
-
-function useRemote<T>(path: string) {
-  const [data, setData] = useState<T | null>(null);
-  const [error, setError] = useState("");
-  useEffect(() => {
-    let active = true;
-    api<T>(path).then(value => { if (active) setData(value); }).catch(reason => {
-      if (active) setError(errorMessage(reason));
-    });
-    return () => { active = false; };
-  }, [path]);
-  return { data, error };
-}
 
 function Card({ children }: { children: ReactNode }) {
   return <section className="card">{children}</section>;
 }
 
-function Events({ home = false }: { home?: boolean }) {
-  const { data, error } = useRemote<{ events: ShopEvent[] }>("/api/events");
-  const events = home ? data?.events.slice(0, 3) : data?.events;
-  return <>
-    <p role="status" className={error ? "error" : undefined}>{error || (!events ? "Loading events…" : events.length ? "" : "No events available.")}</p>
-    <ul className={home ? "events-grid" : "customer-list"}>{events?.map(event =>
-      <li key={event.event_id}><strong>{event.name}</strong><p>{event.customer_ids.length} / {event.participant_limit} registered</p></li>)}</ul>
-  </>;
-}
+/** Local demo accounts (created on start-up by run_local_website.py). */
+const DEMO_LOGINS = {
+  customer: { email: "login@example.com", password: "1234" },
+  admin: { email: "admin@lpvr.com", password: "123456789" },
+};
 
 function Login() {
+  const formRef = useRef<HTMLFormElement>(null);
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -60,19 +46,32 @@ function Login() {
       setBusy(false);
     }
   }
+  /** Put a demo account into the form and move to Sign in. */
+  function fill({ email, password }: { email: string; password: string }) {
+    const form = formRef.current;
+    if (!form) return;
+    (form.elements.namedItem("email") as HTMLInputElement).value = email;
+    (form.elements.namedItem("password") as HTMLInputElement).value = password;
+    setError("");
+    form.querySelector<HTMLButtonElement>(".login-submit")?.focus();
+  }
   return <section className="card login-card" aria-labelledby="login-title">
     <Brand /><h1 id="login-title">Sign in</h1>
     <p className="login-intro">Sign in with your customer or admin account.</p>
-    <form className="stacked-form" onSubmit={submit} aria-busy={busy || undefined}>
-      <label htmlFor="login-email">Email</label><input id="login-email" name="email" type="email" autoComplete="username" defaultValue="login@example.com" required />
+    <form ref={formRef} className="stacked-form" onSubmit={submit} aria-busy={busy || undefined}>
+      <label htmlFor="login-email">Email</label><input id="login-email" name="email" type="email" autoComplete="username" defaultValue={DEMO_LOGINS.customer.email} required />
       <label htmlFor="login-password">Password</label>
-      <div className="password-field"><input id="login-password" name="password" type={visible ? "text" : "password"} autoComplete="current-password" defaultValue="1234" required />
+      <div className="password-field"><input id="login-password" name="password" type={visible ? "text" : "password"} autoComplete="current-password" defaultValue={DEMO_LOGINS.customer.password} required />
         <button type="button" className="password-toggle" aria-controls="login-password" aria-label={visible ? "Hide password" : "Show password"} aria-pressed={visible} onClick={() => setVisible(!visible)}>{visible ? "Hide" : "Show"}</button></div>
       <p className="muted" role="status" aria-live="polite">{busy ? "Signing in..." : ""}</p>
       {error && <p className="error" role="alert">{error}</p>}
       <button className="login-submit" disabled={busy}>{busy ? "Signing in..." : "Sign in"}</button>
     </form>
-    <p className="login-demo muted">Local demo: <code>login@example.com</code> / <code>1234</code></p>
+    <div className="login-demo">
+      <span className="muted">Local demo accounts</span>
+      <button type="button" className="login-fill" onClick={() => fill(DEMO_LOGINS.customer)}>Fill in customer</button>
+      <button type="button" className="login-fill" onClick={() => fill(DEMO_LOGINS.admin)}>Fill in admin</button>
+    </div>
     <p className="login-signup"><a href="signup.html">Create an account</a></p>
   </section>;
 }
@@ -82,8 +81,9 @@ function Home() {
     <header className="header customer-welcome photo-hero" style={photoStyle("hero-workshop")}>
       <div><Brand large /><h1>Fix your own bike. We'll help.</h1>
         <p className="subtitle">A self-serve community bike shop:use our tools and stands, share knowledge, and get friendly support from volunteers. No experience needed.</p></div></header>
+    <NextUp />
     <ProductShowcase />
-    <section className="card events-section"><PhotoBand name="band-events" layout="corner" /><h2>Upcoming Events</h2><p className="events-description">Discover our community activities.</p><Events home /><a href="events.html" className="events-link">View all events</a></section>
+    <EventShowcase />
     <div className="sections-grid"><section className="card browse-items-section"><PhotoBand name="band-items" /><h2>Browse Items</h2><p className="section-description">Explore our collection of bike parts and tools available for use or purchase.</p><a href="items.html" className="section-link">View all items</a></section>
       <section className="card book-appointment-section"><PhotoBand name="band-appointments" /><h2>Book Appointment</h2><p className="section-description">Schedule a guided session with our expert volunteers for personalized assistance.</p><a href="appointments.html" className="section-link">View appointments</a></section></div>
     <p><a href="/">Return to the local demo</a></p>

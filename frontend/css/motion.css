@@ -8,13 +8,11 @@
 }
 
 /* Cards that lead somewhere lift a little. */
-.sections-grid > .card,
-.events-grid > li {
+.sections-grid > .card {
   transition: transform 260ms var(--hover-ease), box-shadow 260ms var(--hover-ease), border-color 200ms ease;
 }
 
-.sections-grid > .card:hover,
-.events-grid > li:hover {
+.sections-grid > .card:hover {
   border-color: rgb(242 106 27 / 45%);
   box-shadow: var(--hover-lift);
   transform: translateY(-4px);
@@ -31,7 +29,6 @@
 
 /* Text links: the underline grows in from the left and the arrow-like link nudges right. */
 .section-link,
-.events-link,
 .sc-more {
   display: inline-block;
   background: linear-gradient(currentcolor, currentcolor) left bottom / 0 2px no-repeat;
@@ -40,7 +37,6 @@
 }
 
 .section-link:hover,
-.events-link:hover,
 .sc-more:hover {
   background-size: 100% 2px;
   transform: translateX(3px);

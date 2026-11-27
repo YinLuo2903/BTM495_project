@@ -55,6 +55,7 @@ function setupFetch() {
       if (path === "/api/events") return ok({ events });
       if (path === "/api/dashboard") return ok({ orders, payments });
       if (path === "/api/inventory") return ok({ items });
+      if (path === "/api/admin/inventory-history") return ok({ history: [] });
     }
     if (method === "POST" && path === "/api/events") return ok({ event_id: 9 }, 201);
     if (method === "POST" && path === "/api/uploads") return ok({ image_path: "/uploads/" + "c".repeat(32) + ".png" }, 201);
@@ -88,10 +89,10 @@ describe("admin shell", () => {
     expect(within(nav).getByRole("link", { name: "Dashboard" }).getAttribute("aria-current")).toBeNull();
     expect(screen.getByText("Admin", { selector: ".adm-account-name" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Sign Out" })).toBeTruthy();
-    // The sidebar is just the account card above the menu: no logo, shop name or "Manage" heading.
+    // The shop's brand lockup, then the account card, then the menu; no "Manage" heading.
     const side = screen.getByRole("complementary", { name: "Admin navigation" });
-    expect(Array.from(side.children).map(child => child.className || child.tagName)).toEqual(["adm-account", "NAV"]);
-    expect(within(side).queryByRole("img")).toBeNull();
+    expect(Array.from(side.children).map(child => child.className || child.tagName)).toEqual(["adm-brand nav-brand", "adm-account", "NAV"]);
+    expect(within(side).getByRole("link", { name: "LE PETIT VÉLO ROUGE admin dashboard" }).getAttribute("href")).toBe("/views/admin/index.html");
     expect(screen.queryByText("Manage")).toBeNull();
     await screen.findByRole("button", { name: "Fall Ride" });
   });
@@ -109,8 +110,10 @@ describe("dashboard", () => {
     setupFetch();
     render(<AdminDashboard today={new Date(2026, 10, 22)} />);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Dashboard November 2026");
-    const value = (label: string) => within(screen.getByRole("region", { name: label })).getByText(/./, { selector: ".adm-kpi-value" }).textContent;
-    expect(await screen.findByRole("region", { name: "Customers" })).toBeTruthy();
+    const kpi = (label: string) => screen.getByRole("link", { name: new RegExp(`^${label}: `) });
+    const value = (label: string) => within(kpi(label)).getByText(/./, { selector: ".adm-kpi-value" }).textContent;
+    expect(await screen.findByRole("link", { name: /^Customers: / })).toBeTruthy();
+    expect(kpi("Pending orders").getAttribute("href")).toBe("orders.html");
     expect(value("Customers")).toBe("2");
     expect(value("Paid revenue")).toBe("$144.93 CAD"); // October's payment is left out
     expect(value("Pending orders")).toBe("1");
@@ -131,6 +134,26 @@ describe("dashboard", () => {
     expect(screen.getByText(/Nov 16 – 22, 2026/)).toBeTruthy();
   });
 
+  it("shows what is next, what needs attention and month-by-month trends", async () => {
+    setupFetch();
+    overrides["GET /api/admin/inventory-history"] = { body: { history: [
+      { item_id: 1, old_quantity: null, new_quantity: 10, created_at: "2026-09-01 09:00:00" },
+      { item_id: 1, old_quantity: 10, new_quantity: 7, created_at: "2026-11-02 10:00:00" },
+    ] } };
+    render(<AdminDashboard today={new Date(2026, 10, 22)} />);
+    const next = await screen.findByRole("region", { name: "Next up" });
+    expect(within(next).getByRole("link", { name: /Fall Ride/ }).getAttribute("href")).toBe("events.html?id=3");
+    const attention = screen.getByRole("region", { name: "Needs attention" });
+    expect(within(attention).getByRole("link", { name: /2 pending orders/ }).getAttribute("href")).toBe("orders.html");
+    const stock = screen.getByRole("figure", { name: "Units in stock" });
+    expect(within(stock).getByRole("img", { name: "Units in stock, by month" })).toBeTruthy();
+    const rows = within(stock).getAllByRole("row").slice(1).map(row => row.textContent);
+    expect(rows.slice(-3)).toEqual(["September 202610", "October 202610", "November 20267"]);
+    fireEvent.click(screen.getByRole("button", { name: "Last 12 months" }));
+    expect(within(screen.getByRole("figure", { name: "Orders" })).getAllByRole("row")).toHaveLength(13);
+    delete overrides["GET /api/admin/inventory-history"];
+  });
+
   it("reports a loading failure and retries", async () => {
     const fetch = setupFetch();
     overrides["GET /api/dashboard"] = { status: 500, body: { message: "Database unavailable." } };
@@ -138,7 +161,7 @@ describe("dashboard", () => {
     expect((await screen.findByRole("alert")).textContent).toContain("Database unavailable.");
     delete overrides["GET /api/dashboard"];
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
-    expect(await screen.findByRole("region", { name: "Customers" })).toBeTruthy();
+    expect(await screen.findByRole("link", { name: /^Customers: / })).toBeTruthy();
     expect(calls(fetch, "GET", "/api/dashboard")).toHaveLength(2);
   });
 });
@@ -274,7 +297,7 @@ describe("editable modules", () => {
     const fetch = setupFetch();
     render(<AdminPage page="inventory" />);
     await screen.findByRole("button", { name: "Chain" });
-    expect(screen.getByText("Low · 3")).toBeTruthy();
+    expect(screen.getByText("Only 3 left")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /^Not tracked/ }));
     expect(screen.queryByRole("button", { name: "Chain" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /^All/ }));

@@ -1,6 +1,8 @@
 import sqlite3
 import sys
+import tempfile
 import unittest
+from contextlib import closing
 from datetime import datetime
 from pathlib import Path
 
@@ -10,6 +12,7 @@ from backend.models.event import Event
 from backend.models.order import OrderStatus
 from backend.models.payment import PaymentStatus
 from backend.utils.constants import DATABASE_SCHEMA_COLUMNS, DatabaseValues, StatusID
+from database.sqlite_database import initialize_database
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -339,6 +342,24 @@ class DatabaseSchemaTests(unittest.TestCase):
             with self.subTest(statement=statement):
                 with self.assertRaises(sqlite3.IntegrityError):
                     self.connection.execute(statement)
+
+    def test_older_customer_tables_gain_created_at_and_new_customers_get_stamped(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "old.db"
+            with closing(sqlite3.connect(path)) as connection:
+                connection.execute(
+                    "CREATE TABLE customer (customer_id INTEGER PRIMARY KEY, customer_code TEXT UNIQUE, first_name TEXT NOT NULL,"
+                    " last_name TEXT NOT NULL DEFAULT '', email TEXT UNIQUE, phone TEXT, address TEXT, password_hash TEXT)"
+                )
+                connection.execute("INSERT INTO customer (customer_id, first_name) VALUES (1, 'Old')")
+                connection.commit()
+            initialize_database(path)
+            initialize_database(path)  # running twice is harmless
+            with closing(sqlite3.connect(path)) as connection:
+                self.assertIsNone(connection.execute("SELECT created_at FROM customer WHERE customer_id = 1").fetchone()[0])
+                connection.execute("INSERT INTO customer (first_name) VALUES ('New')")
+                self.assertIsNotNone(connection.execute("SELECT created_at FROM customer WHERE first_name = 'New'").fetchone()[0])
+
     def test_event_registration_tracks_unique_customer_per_event(self) -> None:
         self.connection.executescript(
             """

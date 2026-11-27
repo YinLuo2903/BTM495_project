@@ -1,13 +1,22 @@
 import { useCallback, useEffect, useState } from "react";
-import { api, errorMessage, formatAmount, type ShopEvent } from "../../services/api";
-import { fetchAppointments, fetchCustomers, fetchDashboard, plural, statusName, type AdminAppointment, type AdminOrder, type AdminPayment } from "../../services/admin";
+import { Agenda, type AgendaEntry } from "../../components/Agenda";
+import { photoStyle } from "../../components/Photo";
+import { TrendChart, type TrendPoint } from "../../components/TrendChart";
+import { api, errorMessage, formatAmount, type Item, type ShopEvent } from "../../services/api";
+import {
+  fetchAppointments, fetchCustomers, fetchDashboard, fetchStockHistory, plural, statusName,
+  type AdminAppointment, type AdminCustomer, type AdminOrder, type AdminPayment, type StockChange,
+} from "../../services/admin";
+import { StockLabel, stockStatus } from "../customer/addToCart";
 
 interface DashboardData {
-  customerCount: number;
+  customers: AdminCustomer[];
   orders: AdminOrder[];
   payments: AdminPayment[];
   events: ShopEvent[];
   appointments: AdminAppointment[];
+  items: Item[];
+  stock: StockChange[];
 }
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
@@ -21,13 +30,15 @@ export function AdminDashboard({ today = new Date() }: { today?: Date }) {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState("");
   const [weekOffset, setWeekOffset] = useState(0);
+  const [months, setMonths] = useState(6);
 
   const load = useCallback(async () => {
     try {
-      const [customers, dashboard, events, appointments] = await Promise.all([
+      const [customers, dashboard, events, appointments, items, stock] = await Promise.all([
         fetchCustomers(), fetchDashboard(), api<{ events: ShopEvent[] }>("/api/events").then(d => d.events), fetchAppointments(),
+        api<{ items: Item[] }>("/api/inventory").then(d => d.items), fetchStockHistory(),
       ]);
-      setData({ customerCount: customers.length, orders: dashboard.orders, payments: dashboard.payments, events, appointments });
+      setData({ customers, orders: dashboard.orders, payments: dashboard.payments, events, appointments, items, stock });
       setError("");
     } catch (reason) {
       setError(errorMessage(reason));
@@ -40,7 +51,7 @@ export function AdminDashboard({ today = new Date() }: { today?: Date }) {
   const monthName = today.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
   return <>
-    <div className="adm-head">
+    <div className="adm-head adm-hero photo-hero" style={photoStyle("header-tool-wall")}>
       <div>
         <h1>Dashboard <span className="adm-month">{monthName}</span></h1>
         <p>Overview of the shop’s customers, orders, events and repairs.</p>
@@ -49,6 +60,12 @@ export function AdminDashboard({ today = new Date() }: { today?: Date }) {
     {error && <div className="adm-alert" role="alert">{error} <button type="button" className="adm-text-btn" onClick={() => void load()}>Retry</button></div>}
     {!data ? !error && <p role="status">Loading dashboard…</p> : <>
       <Kpis data={data} monthKey={monthKey} todayKey={todayKey} />
+      <div className="adm-glance">
+        <Agenda id="adm-next" title="Next up" state={{ kind: "ready", value: nextUp(data, today) }}
+          empty="Nothing booked in the coming weeks." guest="" />
+        <NeedsAttention data={data} todayKey={todayKey} />
+      </div>
+      <Trends data={data} today={today} months={months} onMonths={setMonths} />
       <WeeklySchedule data={data} today={today} offset={weekOffset} onOffset={setWeekOffset} />
     </>}
   </>;
@@ -62,18 +79,99 @@ function Kpis({ data, monthKey, todayKey }: { data: DashboardData; monthKey: str
   const pendingOrders = data.orders.filter(o => o.status_id === PENDING && inMonth(o.order_date)).length;
   const upcomingEvents = data.events.filter(e => e.status_id === PENDING && inMonth(e.event_date_time) && (e.event_date_time ?? "").slice(0, 10) >= todayKey).length;
   const cards = [
-    { label: "Customers", value: String(data.customerCount), note: "All registered accounts" },
-    { label: "Paid revenue", value: formatAmount(revenue), note: `From ${plural(paid.length, "completed payment")}` },
-    { label: "Pending orders", value: String(pendingOrders), note: "Waiting to be completed" },
-    { label: "Upcoming events", value: String(upcomingEvents), note: "From today to month end" },
+    { label: "Customers", value: String(data.customers.length), note: "All registered accounts", href: "customers.html" },
+    { label: "Paid revenue", value: formatAmount(revenue), note: `From ${plural(paid.length, "completed payment")}`, href: "payments.html" },
+    { label: "Pending orders", value: String(pendingOrders), note: "Waiting to be completed", href: "orders.html" },
+    { label: "Upcoming events", value: String(upcomingEvents), note: "From today to month end", href: "events.html" },
   ];
   return <div className="adm-kpis">
-    {cards.map(card => <section key={card.label} className="adm-card adm-kpi" aria-label={card.label}>
+    {cards.map(card => <a key={card.label} href={card.href} className="adm-card adm-kpi" aria-label={`${card.label}: ${card.value}`}>
       <div className="adm-kpi-label">{card.label}</div>
       <div className="adm-kpi-value">{card.value}</div>
       <div className="adm-kpi-note">{card.note}</div>
-    </section>)}
+    </a>)}
   </div>;
+}
+
+const atTime = (value: string | null | undefined) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(value ?? "");
+  return m ? new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) : null;
+};
+
+/** The next appointments and events (with who and how full), soonest first. */
+function nextUp(data: DashboardData, today: Date): AgendaEntry[] {
+  const now = today.getTime();
+  const entries: AgendaEntry[] = [
+    ...data.appointments.filter(a => a.status_id !== CANCELLED).flatMap(a => {
+      const when = atTime(a.appointment_time);
+      // Online bookings read "<repair type>: <details>"; the type is enough here.
+      const title = a.description.split(": ")[0] || a.description;
+      return when ? [{ key: `a${a.appointment_id}`, when, title, place: `Repair for ${a.customer_name}`, href: `appointments.html?id=${a.appointment_id}` }] : [];
+    }),
+    ...data.events.filter(e => e.status_id === PENDING).flatMap(e => {
+      const when = atTime(e.event_date_time);
+      return when ? [{ key: `e${e.event_id}`, when, title: e.name, place: `${e.customer_ids.length} / ${e.participant_limit} registered${e.location ? ` · ${e.location}` : ""}`, href: `events.html?id=${e.event_id}` }] : [];
+    }),
+  ];
+  return entries.filter(entry => entry.when.getTime() >= now).sort((a, b) => a.when.getTime() - b.when.getTime()).slice(0, 5);
+}
+
+/** Things to act on: stock running low, orders waiting, events filling up. */
+function NeedsAttention({ data, todayKey }: { data: DashboardData; todayKey: string }) {
+  const low = data.items.filter(item => stockStatus(item.stock_quantity).tone !== "in")
+    .sort((a, b) => (a.stock_quantity ?? 0) - (b.stock_quantity ?? 0));
+  const pending = data.orders.filter(o => o.status_id === PENDING).length;
+  const filling = data.events.filter(e => e.status_id === PENDING && (e.event_date_time ?? "").slice(0, 10) >= todayKey
+    && e.customer_ids.length >= e.participant_limit * 0.8);
+  return <section className="card adm-attention" aria-labelledby="adm-attention-title">
+    <h2 id="adm-attention-title">Needs attention</h2>
+    <ul>
+      <li><a href="inventory.html"><strong>{plural(low.length, "item")} low or out of stock</strong>
+        {low.slice(0, 3).map(item => <span key={item.item_id} className="adm-att-item">{item.name} <StockLabel stock={item.stock_quantity} /></span>)}</a></li>
+      <li><a href="orders.html"><strong>{plural(pending, "pending order")}</strong><span className="adm-muted">Waiting to be completed</span></a></li>
+      <li><a href="events.html"><strong>{plural(filling.length, "event")} nearly full</strong>
+        {filling.slice(0, 2).map(e => <span key={e.event_id} className="adm-muted">{e.name} · {e.customer_ids.length} / {e.participant_limit}</span>)}</a></li>
+    </ul>
+  </section>;
+}
+
+/** Month-by-month charts of the basics, over the last 6 or 12 months. */
+function Trends({ data, today, months, onMonths }: { data: DashboardData; today: Date; months: number; onMonths: (n: number) => void }) {
+  const range = Array.from({ length: months }, (_, i) => new Date(today.getFullYear(), today.getMonth() - months + 1 + i, 1));
+  const key = (d: Date) => dayKey(d).slice(0, 7);
+  const series = (value: (month: string, end: string) => number): TrendPoint[] => range.map(d => ({
+    label: d.toLocaleDateString("en-US", { month: "short" }),
+    title: d.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+    value: value(key(d), dayKey(new Date(d.getFullYear(), d.getMonth() + 1, 1))),
+  }));
+  const inMonth = (value: string | null | undefined, month: string) => (value ?? "").slice(0, 7) === month;
+  const revenue = series(m => data.payments.filter(p => p.status_id === COMPLETED && inMonth(p.payment_date, m)).reduce((t, p) => t + p.amount, 0));
+  const orders = series(m => data.orders.filter(o => inMonth(o.order_date, m)).length);
+  // Accounts without a sign-up time existed before tracking started.
+  const customers = series((_, end) => data.customers.filter(c => !c.created_at || c.created_at < end).length);
+  const stock = series((_, end) => {
+    const latest = new Map<number, number>();
+    for (const change of data.stock) if (change.created_at < end) latest.set(change.item_id, change.new_quantity);
+    return [...latest.values()].reduce((t, q) => t + q, 0);
+  });
+  const events = series(m => data.events.filter(e => e.status_id !== CANCELLED && inMonth(e.event_date_time, m)).length);
+  const appointments = series(m => data.appointments.filter(a => a.status_id !== CANCELLED && inMonth(a.appointment_time, m)).length);
+  return <section className="adm-card adm-trends" aria-labelledby="adm-trends-title">
+    <div className="adm-card-head">
+      <div><h2 id="adm-trends-title">Trends</h2><p className="adm-week-range">Month by month; hover a month for its value.</p></div>
+      <div className="adm-range" role="group" aria-label="Range">
+        {[6, 12].map(n => <button key={n} type="button" className="adm-pill" aria-pressed={months === n} onClick={() => onMonths(n)}>Last {n} months</button>)}
+      </div>
+    </div>
+    <div className="adm-trend-grid">
+      <TrendChart title="Paid revenue" points={revenue} format={formatAmount} />
+      <TrendChart title="Orders" points={orders} />
+      <TrendChart title="Customers" note="Total accounts" points={customers} kind="line" />
+      <TrendChart title="Units in stock" note="All items, end of month" points={stock} kind="line" />
+      <TrendChart title="Events" points={events} />
+      <TrendChart title="Appointments" points={appointments} />
+    </div>
+  </section>;
 }
 
 interface Chip {

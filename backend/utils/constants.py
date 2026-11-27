@@ -94,6 +94,7 @@ DATABASE_SCHEMA_COLUMNS = {
         DatabaseColumns.PHONE,
         DatabaseColumns.ADDRESS,
         DatabaseColumns.PASSWORD_HASH,
+        DatabaseColumns.CREATED_AT,
     ),
     DatabaseTables.USER_SESSION: (
         DatabaseColumns.TOKEN_HASH,

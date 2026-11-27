@@ -5,6 +5,7 @@ import {
   type BookedAppointment, type MonthAvailability,
 } from "../../services/appointments";
 import { SessionApiError, sessionApi } from "../../services/session";
+import { Agenda, loadMyAppointments, useCustomerData } from "../../components/Agenda";
 import { AppointmentCalendar } from "./AppointmentCalendar";
 import { DESCRIPTION_MAX, canContinue, validateIssue, type IssueDetails, type IssueErrors } from "./appointmentValidation";
 
@@ -43,6 +44,7 @@ export function AppointmentsPage({ today = new Date() }: { today?: Date }) {
   const [submitError, setSubmitError] = useState("");
   const [needsSignIn, setNeedsSignIn] = useState(false);
   const [booked, setBooked] = useState<BookedAppointment | null>(null);
+  const [mine, reloadMine] = useCustomerData(loadMyAppointments);
 
   const stepHeading = useRef<HTMLHeadingElement>(null);
   const movedStep = useRef(false);
@@ -119,6 +121,7 @@ export function AppointmentsPage({ today = new Date() }: { today?: Date }) {
     try {
       const appointment = await bookAppointment({ date, time: slot, repair_type: details.repairType, description: details.description.trim() });
       setBooked(appointment);
+      reloadMine();
       if (account.kind !== "customer") void loadAccount();
       goTo("done");
       void loadMonth(date.slice(0, 7));
@@ -165,7 +168,9 @@ export function AppointmentsPage({ today = new Date() }: { today?: Date }) {
       <h1>Book a Repair Appointment</h1>
       <p>Schedule a bike repair with LPVR. Select an available time, describe your bike issue, and confirm your appointment.</p>
     </header>
-    <div className="ev-layout">
+    <Agenda id="mine" title="Your appointments" state={mine} empty="No upcoming appointments yet. Book one below."
+      guest="Sign in to see your appointments." />
+    <div className="ev-layout" id="book">
       <section className="ev-card ev-details" aria-labelledby="ap-step-title">
         <StepIndicator step={step} />
         <div className="ap-body ap-step-in" key={String(step)}>

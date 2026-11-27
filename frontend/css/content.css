@@ -64,3 +64,113 @@
   color: var(--ink);
   text-decoration-color: var(--brand-dark);
 }
+
+/* "Your appointments" / "Your events" (src/components/Agenda.tsx) and the home page "Next up". */
+.agenda,
+.ev-layout {
+  scroll-margin-top: 96px; /* menu links jump here; keep clear of the fixed menu bar */
+}
+
+.agenda h2 {
+  margin: 0 0 14px;
+}
+
+.agenda-label {
+  color: var(--ev-brand-text);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+a.agenda-next {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 18px;
+  border: 1.5px solid rgb(242 106 27 / 45%);
+  border-radius: 14px;
+  color: var(--ink);
+  background: var(--ev-tint);
+  text-decoration: none;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+a.agenda-next:hover {
+  box-shadow: 0 10px 24px rgb(242 106 27 / 18%);
+  transform: translateY(-2px);
+}
+
+.agenda-date {
+  display: grid;
+  place-items: center;
+  min-width: 58px;
+  padding: 8px 6px;
+  border-radius: 12px;
+  color: var(--ev-brand-text);
+  background: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.agenda-date strong {
+  color: var(--ink);
+  font-size: 26px;
+}
+
+.agenda-body {
+  display: grid;
+  gap: 3px;
+}
+
+.agenda-body strong {
+  font-size: 18px;
+}
+
+.agenda-later {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.agenda-later a {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.agenda-later a span {
+  min-width: 170px;
+  color: var(--muted);
+}
+
+.agenda-later a:hover strong {
+  color: var(--ev-brand-text);
+}
+
+a.next-up {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 16px 22px;
+  border-left: 4px solid var(--brand);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.next-up-go {
+  margin-left: auto;
+  color: var(--brand);
+  font-size: 20px;
+  transition: transform 200ms ease;
+}
+
+a.next-up:hover .next-up-go {
+  transform: translateX(4px);
+}

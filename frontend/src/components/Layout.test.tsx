@@ -59,7 +59,8 @@ describe("shared layout", () => {
     render(<Layout><main /></Layout>);
     const nav = screen.getByRole("navigation", { name: "Main navigation" });
     expect(within(nav).getAllByRole("link").map(link => link.getAttribute("aria-label") ?? link.textContent)).toEqual([
-      "LE PETIT VÉLO ROUGE home", "Home", "Items", "All items", "Events", "Appointments", "Shopping Cart", "Sign In", "Create account",
+      "LE PETIT VÉLO ROUGE home", "Home", "Items", "All items", "Events", "My events", "Event calendar",
+      "Appointments", "My appointments", "Book a repair", "Shopping Cart", "Sign In", "Create account",
     ]);
     expect(screen.getByRole("link", { name: "Create account" }).getAttribute("href")).toBe("/views/customer/signup.html");
     expect(screen.queryByRole("button", { name: "Sign Out" })).toBeNull();

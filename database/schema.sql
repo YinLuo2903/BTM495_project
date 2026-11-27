@@ -22,8 +22,17 @@ CREATE TABLE IF NOT EXISTS customer (
     email TEXT UNIQUE,
     phone TEXT,
     address TEXT,
-    password_hash TEXT
+    password_hash TEXT,
+    created_at DATETIME  -- when the account was created; stamped by the trigger below
 );
+
+-- Stamp the sign-up time on every new customer (the admin dashboard charts it).
+CREATE TRIGGER IF NOT EXISTS customer_stamp_created_at
+AFTER INSERT ON customer
+WHEN NEW.created_at IS NULL
+BEGIN
+    UPDATE customer SET created_at = datetime('now', 'localtime') WHERE customer_id = NEW.customer_id;
+END;
 
 -- Assign the LPVR customer code as soon as a customer row is saved.
 CREATE TRIGGER IF NOT EXISTS customer_assign_code

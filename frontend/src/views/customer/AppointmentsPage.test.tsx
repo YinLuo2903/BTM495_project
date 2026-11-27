@@ -32,6 +32,7 @@ function mockFetch(handler: (url: string, method: string, body: unknown) => Repl
       ?? (url.startsWith("/api/appointments/availability?month=2026-11") ? { body: month(2026, 10, { 23: ["10:00"] }, [27]) }
         : url.startsWith("/api/appointments/availability?month=2026-12") ? { body: month(2026, 11) }
         : url === "/api/profile" ? { body: { status: "ok", customer: { first_name: "Jamie", last_name: "Rivera" } } }
+        : url === "/api/my-appointments" && method === "GET" ? { body: { status: "ok", appointments: [] } }
         : { status: 404, body: { status: "error", message: "Not found." } });
     const status = reply.status ?? 200;
     return { ok: status < 400, status, json: async () => reply.body };
@@ -207,7 +208,7 @@ describe("AppointmentsPage", () => {
     expect(screen.getByText("Sign in to confirm")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Confirm Booking" }));
     expect(within(await screen.findByRole("alert")).getByRole("link", { name: "sign in" }).getAttribute("href")).toBe("login.html");
-    expect(fetchMock.mock.calls.some(([url]) => url === "/api/my-appointments")).toBe(false);
+    expect(fetchMock.mock.calls.some(([url, options]) => url === "/api/my-appointments" && options?.method === "POST")).toBe(false);
   });
 
   it("books once a guest signs in from another tab, without reloading", async () => {

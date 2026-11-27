@@ -56,6 +56,24 @@ class AdminRouteTests(unittest.TestCase):
         self.assertEqual((emily["customer_code"], emily["order_count"], emily["appointment_count"]), ("LPVR001", 1, 1))
         self.assertEqual((liam["customer_code"], liam["order_count"], liam["appointment_count"]), ("LPVR002", 0, 0))
 
+    def test_customers_carry_their_sign_up_time(self) -> None:
+        _, body = self.call("GET", "/api/admin/customers")
+        self.assertRegex(body["customers"][0]["created_at"], r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$")
+
+    def test_lists_every_stock_change_oldest_first(self) -> None:
+        with closing(sqlite3.connect(self.db)) as connection:
+            connection.executescript(
+                """
+                INSERT INTO item (item_id, name, price) VALUES (7, 'Pump', 49);
+                INSERT INTO inventory_history (item_id, old_quantity, new_quantity, admin_id, reason, created_at)
+                    VALUES (7, 10, 8, 1, 'Sale', '2026-11-02 10:00:00'), (7, NULL, 10, 1, 'Opening', '2026-06-01 09:00:00');
+                """
+            )
+            connection.commit()
+        status, body = self.call("GET", "/api/admin/inventory-history")
+        self.assertEqual(status, 200)
+        self.assertEqual([(h["old_quantity"], h["new_quantity"]) for h in body["history"]], [(None, 10), (10, 8)])
+
     def test_keeps_a_customer_who_has_orders_or_appointments(self) -> None:
         status, body = self.call("DELETE", "/api/admin/customers/1")
         self.assertEqual(status, 409)

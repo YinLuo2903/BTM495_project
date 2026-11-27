@@ -37,10 +37,10 @@ builds a website for the shop. Not licensed for reuse.
 | `frontend/assets/images/lpvr/header-tool-wall.webp` | Tools available at Le Petit Vélo Rouge |
 | `frontend/assets/images/lpvr/band-orders.webp` | Le Petit Vélo Rouge entrance by the Oscar Peterson parking lot |
 
-## Wikimedia Commons: sample item and event photos
+## Wikimedia Commons and Flickr: sample item and event photos
 
 `database/Mockdata/images/*.webp`: photos for the sample items and events, from Wikimedia
-Commons under Creative Commons licenses (CC BY 2.0, CC BY-SA 2.0/3.0/4.0, CC0) or in the
+Commons (a few from Flickr, found through Openverse) under Creative Commons licenses (CC BY 2.0, CC BY-SA 2.0/3.0/4.0, CC0) or in the
 public domain; cropped, resized and converted to WebP. Each photo's author, license and
 source page are listed in `frontend/src/views/customer/credits.ts` and on the site's
 Photo credits page. The CC BY-SA photos as modified here are shared under the same

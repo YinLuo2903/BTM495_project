@@ -9,3 +9,13 @@ event_id,admin_id,location,name,description,eventDateTime,participantLimit,statu
 8,1,"Parc La Fontaine, Montreal",Family Bike Day,Relaxed family ride with games and refreshments,2026-12-05 10:00:00,35,1,/uploads/024030b97e47502428754d3f9ab5d967.webp
 9,1,Bike Shop Workshop Area,Tire and Tube Replacement Class,Step-by-step tubeless and standard tire changes,2026-12-12 14:00:00,12,1,/uploads/db272b6f3b049ecd419dc76f41166355.webp
 10,1,"Vieux-Port, Montreal",New Year Kickoff Ride,Winter fat bike ride to start the year,2027-01-09 10:00:00,25,1,/uploads/3a758c2fd38b5d59a3efe5fa473731d1.webp
+11,1,Bike Shop Workshop Area,Bike Lights Night Clinic,"Pick, fit and aim lights for safe night riding",2026-12-02 18:30:00,20,1,/uploads/615b84e311ad864c68189ad2cb9cdc5a.webp
+12,1,Bike Shop Workshop Area,Holiday Gift Repair Drive,Refurbish donated bikes for families in need,2026-12-19 10:00:00,25,1,/uploads/576bbf8b57b377f1888694cefc375d22.webp
+13,1,Concordia Loyola Campus,Winter Commuting 101,"Clothing, tires and tips for riding through the winter",2027-01-16 13:00:00,30,1,/uploads/63b277ea96eeff00c5e9e216692a3d24.webp
+14,1,"Mont-Royal Park, Montreal",Fat Bike Snow Ride,Guided fat-bike loop on packed snow trails,2027-01-30 10:00:00,15,1,/uploads/2cac706550623fcb8b1c02612aa23561.webp
+15,1,Bike Shop Workshop Area,Wheel Truing Workshop,Learn to true a wheel and replace a spoke,2027-02-13 13:00:00,10,1,/uploads/4a816f3bbbc77895b5a4f5c66e8a3f49.webp
+16,1,Bike Shop Workshop Area,Women & Non-Binary Repair Night,A welcoming evening to learn repairs together,2027-02-24 18:00:00,15,1,/uploads/cff569d0dec3134127a12fb46ebc6eda.webp
+17,1,Bike Shop Showroom,Spring Tune-Up Day,Free safety check and tune-up for the new season,2027-03-20 10:00:00,60,1,/uploads/7f9e433af35befbf1b9ddbbbcafb1306.webp
+18,1,Concordia Loyola Campus,Used Bike Sale,Refurbished bikes at community prices,2027-04-10 09:00:00,120,1,/uploads/fa54c9f08c201ae97f8d94243d2e13af.webp
+19,1,"Lachine Canal, Montreal",Lachine Canal Group Ride,Easy-paced 25 km ride along the canal,2027-04-24 09:30:00,40,1,/uploads/3572b26057a9680c83dd640842a634e6.webp
+20,1,Concordia Loyola Campus,Bike to Campus Week,Breakfast stop and free checks for cyclists,2027-05-03 08:00:00,150,1,/uploads/5d78146319233aa473fd8e3a894c2daf.webp
