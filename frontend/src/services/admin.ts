@@ -1,7 +1,7 @@
 import { api } from "./api";
 
-/** Shared status table: 1 Pending, 2 Completed, 3 Cancelled. */
-export const STATUS_NAMES: Record<number, string> = { 1: "Pending", 2: "Completed", 3: "Cancelled" };
+/** Shared status table: 1 Pending, 2 Completed, 3 Cancelled; 4 Ready for pick-up (orders only). */
+export const STATUS_NAMES: Record<number, string> = { 1: "Pending", 2: "Completed", 3: "Cancelled", 4: "Ready for pick-up" };
 
 export function statusName(id: number | null | undefined): string {
   return (id != null && STATUS_NAMES[id]) || "Unknown";

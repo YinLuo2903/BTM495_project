@@ -75,6 +75,7 @@ class RunLocalWebsiteTests(unittest.TestCase):
             ),
             patch("run_local_website.initialize_database") as initialize_database,
             patch("run_local_website.has_shop_data", return_value=True),
+            patch("run_local_website.sample_data_version", return_value=run_local_website.SAMPLE_DATA_VERSION),
             patch("run_local_website.load_mockdata") as load_mockdata,
             patch("run_local_website.ensure_local_demo_login") as ensure_demo_login,
             patch("run_local_website.ensure_local_admin_login") as ensure_admin_login,
@@ -98,7 +99,7 @@ class RunLocalWebsiteTests(unittest.TestCase):
         self.assertIn("Server ready at http://localhost:8765/.", output)
         self.assertIn("Server stopped by user.", output)
 
-    def _run_main_with_empty_database(self, no_mockdata: bool) -> tuple[MagicMock, MagicMock, str]:
+    def _run_main_with_empty_database(self, no_mockdata: bool, has_data: bool = False, version: int = 0) -> tuple[MagicMock, MagicMock, str]:
         server = MagicMock()
         server.__enter__.return_value = server
         server.server_address = ("127.0.0.1", 8765)
@@ -110,7 +111,8 @@ class RunLocalWebsiteTests(unittest.TestCase):
                 return_value=Namespace(host="127.0.0.1", port=8765, no_browser=True, no_mockdata=no_mockdata),
             ),
             patch("run_local_website.initialize_database"),
-            patch("run_local_website.has_shop_data", return_value=False),
+            patch("run_local_website.has_shop_data", return_value=has_data),
+            patch("run_local_website.sample_data_version", return_value=version),
             patch("run_local_website.load_mockdata", calls.load_mockdata),
             patch("run_local_website.ensure_local_demo_login", calls.ensure_demo_login),
             patch("run_local_website.ensure_local_admin_login"),
@@ -129,6 +131,17 @@ class RunLocalWebsiteTests(unittest.TestCase):
         names = [name for name, *_ in calls.mock_calls]
         self.assertLess(names.index("load_mockdata"), names.index("ensure_demo_login"))
         self.assertIn("Loaded sample data: 18 rows from 2 CSV files.", output)
+
+    def test_main_adds_new_sample_data_to_a_database_from_an_older_version(self) -> None:
+        _, load_mockdata, output = self._run_main_with_empty_database(no_mockdata=False, has_data=True, version=1)
+        load_mockdata.assert_called_once_with(upgrade=True)
+        self.assertIn("Added the new sample data", output)
+
+    def test_main_leaves_an_up_to_date_database_alone(self) -> None:
+        _, load_mockdata, output = self._run_main_with_empty_database(
+            no_mockdata=False, has_data=True, version=run_local_website.SAMPLE_DATA_VERSION)
+        load_mockdata.assert_not_called()
+        self.assertIn("sample data is up to date", output)
 
     def test_main_skips_sample_data_with_flag(self) -> None:
         _, load_mockdata, output = self._run_main_with_empty_database(no_mockdata=True)

@@ -70,6 +70,8 @@ export interface ModuleConfig<T> {
   editor?: Editor<T>;
   remove: (row: T) => Promise<void>;
   deleteText: (row: T) => string;
+  /** One-click move to the next stage (orders), shown on the details panel; null when done. */
+  nextStep?: (row: T) => { label: string; run: () => Promise<void> } | null;
   /** Why the record can't be deleted, or "" when it can. */
   blockDelete?: (row: T) => string;
   /** Options for a "customer" field (customer ID datalist). */
@@ -79,12 +81,13 @@ export interface ModuleConfig<T> {
 export const PAGE_SIZE = 15;
 export const IMAGE_HINT = "JPG, PNG or WebP, up to 2 MB. Shown on the customer page.";
 
-const badgeClass: Record<number, string> = { 1: "adm-b-pending", 2: "adm-b-completed", 3: "adm-b-cancelled" };
+const badgeClass: Record<number, string> = { 1: "adm-b-pending", 2: "adm-b-completed", 3: "adm-b-cancelled", 4: "adm-b-ready" };
 const status = (id: number | null | undefined): Cell => ({ text: statusName(id), kind: "badge", badge: badgeClass[id ?? 0] ?? "adm-b-cancelled" });
-const statusFilters = <T,>(of: (row: T) => number | null | undefined): Filter<T>[] => [
+const statusFilters = <T,>(of: (row: T) => number | null | undefined, ids = [1, 2, 3]): Filter<T>[] => [
   { label: "All", test: () => true },
-  ...[1, 2, 3].map(id => ({ label: statusName(id), test: (row: T) => of(row) === id })),
+  ...ids.map(id => ({ label: statusName(id), test: (row: T) => of(row) === id })),
 ];
+const setOrderStatus = (o: AdminOrder, status_id: number) => api(`/api/orders/${o.order_id}`, "PATCH", { status_id }).then(() => undefined);
 const statusField: FieldDef = { key: "status", label: "Status", type: "status" };
 const imageField: FieldDef = { key: "image", label: "Image", type: "image", hint: IMAGE_HINT };
 const filled = (value: string | undefined) => (value ?? "").trim() !== "";
@@ -287,7 +290,7 @@ export type OrderRow = AdminOrder & { payments: AdminPayment[] };
 
 export const ordersModule: ModuleConfig<OrderRow> = {
   key: "orders", title: "Orders", singular: "order", table: "orders",
-  subtitle: "Orders are placed by customers at checkout. Here you can view or remove them.",
+  subtitle: "Orders are placed by customers at checkout. Open one to move it to Ready for pick-up, then Picked up.",
   searchHint: "Search by order number or customer", filterLabel: "Filter by status",
   load: async () => {
     const { orders, payments } = await fetchDashboard();
@@ -295,7 +298,7 @@ export const ordersModule: ModuleConfig<OrderRow> = {
   },
   id: o => o.order_id, name: o => `Order #${o.order_id}`,
   searchText: o => [`#${o.order_id}`, o.customer_name].join(" "),
-  filters: statusFilters(o => o.status_id),
+  filters: statusFilters(o => o.status_id, [1, 4, 2, 3]),
   columns: [
     { label: "Order", sortValue: o => o.order_id, cell: o => ({ text: `#${o.order_id}`, kind: "primary" }) },
     { label: "Customer", sortValue: o => lower(o.customer_name), cell: o => ({ text: o.customer_name || "—" }) },
@@ -312,6 +315,9 @@ export const ordersModule: ModuleConfig<OrderRow> = {
     ["Status", statusName(o.status_id)],
   ],
   remove: o => api(`/api/orders/${o.order_id}`, "DELETE").then(() => undefined),
+  // Pick-up flow: Pending (preparing) -> Ready for pick-up -> Completed (picked up).
+  nextStep: o => o.status_id === 1 && o.paid ? { label: "Mark ready for pick-up", run: () => setOrderStatus(o, 4) }
+    : o.status_id === 4 ? { label: "Mark picked up", run: () => setOrderStatus(o, 2) } : null,
   deleteText: o => `This permanently removes order #${o.order_id}, its line items${o.payments.length ? ` and ${plural(o.payments.length, "payment")}` : ""}. Stock is not put back.`,
 };
 

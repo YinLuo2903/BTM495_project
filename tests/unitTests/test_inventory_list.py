@@ -122,7 +122,7 @@ class InventoryListTests(unittest.TestCase):
         initialize_database(legacy)
         initialize_database(legacy)  # idempotent
         with closing(sqlite3.connect(legacy)) as connection:
-            self.assertEqual(connection.execute("SELECT COUNT(*) FROM status").fetchone(), (3,))
+            self.assertEqual(connection.execute("SELECT COUNT(*) FROM status").fetchone(), (4,))
             self.assertEqual(
                 [connection.execute(f"SELECT statusID FROM {t}").fetchone()[0]
                  for t in ("event", "appointment", "orders", "payment")],

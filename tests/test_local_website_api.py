@@ -98,7 +98,7 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
                 {"name": "payment", "rows": 0},
                 {"name": "sample", "rows": 2},
                 {"name": "shopping_cart", "rows": 0},
-                {"name": "status", "rows": 3},
+                {"name": "status", "rows": 4},
                 {"name": "user_session", "rows": 0},
             ],
         )
@@ -110,7 +110,7 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
             )
 
     def test_frontend_page_is_served(self) -> None:
-        for path in ("/", "/view/index.html", "/views/index.html"):
+        for path in ("/", "/view/index.html", "/views/index.html", "/views/admin/dry-run.html"):
             with self.subTest(path=path):
                 with urlopen(self.base_url + path) as response:
                     self.assertEqual(response.status, 200)
@@ -890,8 +890,8 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
     def test_signed_in_customer_adds_items_to_cart_within_stock(self) -> None:
         with closing(sqlite3.connect(self.database_path)) as connection:
             connection.executemany(
-                "INSERT INTO item (item_id, name, price) VALUES (?, ?, ?)",
-                [(1, "Road Bike", 2199.0), (2, "Floor Pump", 49.0), (3, "Tune-up", 40.0)],
+                "INSERT INTO item (item_id, name, price, image_path) VALUES (?, ?, ?, ?)",
+                [(1, "Road Bike", 2199.0, "/uploads/" + "b" * 32 + ".webp"), (2, "Floor Pump", 49.0, None), (3, "Tune-up", 40.0, None)],
             )
             # Item 3 has no inventory row, so its stock is not tracked.
             connection.executemany(
@@ -926,7 +926,8 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(body["message"], "Road Bike added to your cart.")
         self.assertEqual(
-            [(line["item_id"], line["quantity"]) for line in body["items"]], [(1, 1)]
+            [(line["item_id"], line["quantity"], line["image_path"]) for line in body["items"]],
+            [(1, 1, "/uploads/" + "b" * 32 + ".webp")],
         )
         self.assertEqual(body["count"], 1)
         self.assertEqual(self._auth_json("POST", "/api/my-cart", token, {"item_id": 1})[1]["count"], 2)
@@ -956,9 +957,9 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
             body["items"],
             [
                 {"item_id": 1, "name": "Road Bike", "category": "", "price": 2199.0,
-                 "quantity": 2, "subtotal": 4398.0, "stock_quantity": 2},
+                 "quantity": 2, "subtotal": 4398.0, "stock_quantity": 2, "image_path": "/uploads/" + "b" * 32 + ".webp"},
                 {"item_id": 3, "name": "Tune-up", "category": "", "price": 40.0,
-                 "quantity": 5, "subtotal": 200.0, "stock_quantity": None},
+                 "quantity": 5, "subtotal": 200.0, "stock_quantity": None, "image_path": None},
             ],
         )
         self.assertEqual((body["count"], body["total"]), (7, 4598.0))
@@ -1115,6 +1116,15 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
         paid = {row["order_id"]: row["paid"] for row in dashboard["orders"]}
         self.assertTrue(paid[order["order_id"]])
 
+        # The customer sees the new order, with its items and payment, in "My orders".
+        status, body = self._auth_json("GET", "/api/my-orders", token)
+        self.assertEqual(status, 200)
+        mine = body["orders"][0]
+        self.assertEqual((mine["order_id"], mine["total"]), (order["order_id"], 2248.9))
+        self.assertEqual([(line["item_id"], line["quantity"]) for line in mine["items"]], [(2, 2), (1, 1)])
+        self.assertEqual((mine["payment"]["amount"], mine["payment"]["status_id"]), (2248.9, 2))
+        self.assertEqual(self._auth_json("GET", "/api/my-orders", "")[0], 401)
+
     def test_concurrent_cart_adds_are_all_kept(self) -> None:
         with closing(sqlite3.connect(self.database_path)) as connection:
             connection.execute("INSERT INTO item (item_id, name, price) VALUES (1, 'Tune-up', 40.0)")
@@ -1171,6 +1181,19 @@ class LocalDryRunWebsiteTests(unittest.TestCase):
             payload = json.load(response)
         self.assertEqual(payload["orders"][0]["total_amount"], 10.5)
         self.assertEqual(payload["payments"][0]["amount"], 7)
+
+    def test_move_an_order_through_its_pick_up_stages(self) -> None:
+        self._add_payment()
+        for status_id in (4, 2):  # ready for pick-up, then picked up
+            with self._call("PATCH", "/api/orders/101", {"status_id": status_id}) as response:
+                self.assertEqual(response.status, 200)
+            with urlopen(self.base_url + "/api/dashboard") as response:
+                self.assertEqual(json.load(response)["orders"][0]["status_id"], status_id)
+        for bad in (9, "2", True):
+            with self._call("PATCH", "/api/orders/101", {"status_id": bad}) as response:
+                self.assertEqual(response.code, 400)
+        with self._call("PATCH", "/api/orders/999", {"status_id": 4}) as response:
+            self.assertEqual(response.code, 404)
 
     def test_edit_rejects_bad_amount_and_missing_records(self) -> None:
         for body in ({"amount": 0}, {"amount": "5"}, {"amount": True}, {}):

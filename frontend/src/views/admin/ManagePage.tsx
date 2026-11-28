@@ -128,6 +128,20 @@ export function ManagePage<T>({ config }: { config: ModuleConfig<T> }) {
     }
   }
 
+  async function advance() {
+    const step = record && config.nextStep?.(record);
+    if (!panel || !record || !step || panel.busy) return;
+    setPanel({ ...panel, busy: true, error: "" });
+    try {
+      await step.run();
+      await load();
+      setPanel(current => current && { ...current, busy: false });
+      showToast(`${config.name(record)} updated.`);
+    } catch (reason) {
+      setPanel(current => current && { ...current, busy: false, error: errorMessage(reason) });
+    }
+  }
+
   async function remove() {
     if (!panel || !record || panel.busy) return;
     setPanel({ ...panel, busy: true, error: "" });
@@ -222,7 +236,7 @@ export function ManagePage<T>({ config }: { config: ModuleConfig<T> }) {
       config={config} record={record} panel={panel} editable={editable}
       onClose={() => setPanel(null)} onEdit={() => setPanel({ ...panel, mode: "edit", confirming: false, errors: {}, error: "" })}
       onCancelEdit={cancelEdit} onSave={() => void save()} onAskDelete={() => setPanel({ ...panel, confirming: true, error: "" })}
-      onCancelDelete={() => setPanel({ ...panel, confirming: false })} onDelete={() => void remove()}
+      onCancelDelete={() => setPanel({ ...panel, confirming: false })} onDelete={() => void remove()} onAdvance={() => void advance()}
       onField={setField} onFieldError={setFieldError}
     />}
     {toast && <div className="adm-toast" role="status"><CheckIcon />{toast}</div>}
@@ -254,6 +268,7 @@ interface PanelProps<T> {
   onAskDelete: () => void;
   onCancelDelete: () => void;
   onDelete: () => void;
+  onAdvance: () => void;
   onField: (key: string, value: string) => void;
   onFieldError: (key: string, message: string) => void;
 }
@@ -315,6 +330,8 @@ function DetailsPanel<T>(props: PanelProps<T>) {
           <span className="adm-spacer" />
           <button type="button" className="adm-btn adm-btn-ghost" onClick={onClose}>Close</button>
           {editable && <button type="button" className="adm-btn adm-btn-primary" onClick={props.onEdit}>Edit details</button>}
+          {record && config.nextStep?.(record) && <button type="button" className="adm-btn adm-btn-primary" disabled={panel.busy}
+            onClick={props.onAdvance}>{panel.busy ? "Saving…" : config.nextStep(record)!.label}</button>}
         </> : <>
           <button type="button" className="adm-btn adm-btn-ghost" disabled={panel.busy} onClick={props.onCancelEdit}>Cancel</button>
           <button type="button" className="adm-btn adm-btn-primary" disabled={panel.busy} onClick={props.onSave}>

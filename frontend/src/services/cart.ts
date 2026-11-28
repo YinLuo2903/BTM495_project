@@ -10,6 +10,8 @@ export interface CartLine {
   subtotal: number;
   /** null when stock is not tracked. */
   stock_quantity: number | null;
+  /** Item photo ("/uploads/<hex>.webp"); missing or null shows a placeholder. */
+  image_path?: string | null;
 }
 
 export interface CartSummary {

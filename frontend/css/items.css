@@ -714,6 +714,10 @@
   font-size: var(--font-small);
 }
 
+.it-demo-note p {
+  margin: 0 0 10px;
+}
+
 .it-pay-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -784,8 +788,13 @@
   font-weight: 600;
 }
 
-.it-summary-lines li > span:first-child {
+.it-summary-lines li {
+  align-items: center;
+}
+
+.it-summary-lines li > span:first-of-type {
   display: grid;
+  flex: 1;
   gap: 2px;
 }
 
@@ -948,4 +957,273 @@
   border-color: var(--ink);
   color: #fff;
   background: var(--ink);
+}
+
+.it-summary-thumb {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+/* Simulated bank connection while a payment is processed (CheckoutPage.tsx BankProgress). */
+.it-bank {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(20 20 20 / 45%);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  animation: it-bank-fade 200ms ease both;
+}
+
+.it-bank-card {
+  width: min(420px, 100%);
+  padding: 30px 28px 24px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgb(0 0 0 / 25%);
+  text-align: center;
+}
+
+.it-bank-lock {
+  display: inline-grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  color: var(--ev-success);
+  background: rgb(29 107 52 / 10%);
+}
+
+.it-bank-card h2 {
+  margin: 12px 0 2px;
+}
+
+.it-bank-amount {
+  margin: 0 0 18px;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.it-bank-bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #eee;
+}
+
+.it-bank-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--brand), var(--brand-dark));
+  transform-origin: left;
+  animation: it-bank-progress linear both;
+}
+
+.it-bank-steps {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0 12px;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.it-bank-steps li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #9a9a9a;
+  font-size: 14px;
+}
+
+.it-bank-steps li::before {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #ddd;
+  border-radius: 50%;
+  content: "";
+  font-size: 11px;
+}
+
+.it-bank-steps li.is-current {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.it-bank-steps li.is-current::before {
+  border-color: var(--brand) var(--brand) #f3d3bf #f3d3bf;
+  animation: it-bank-spin 800ms linear infinite;
+}
+
+.it-bank-steps li.is-done {
+  color: var(--ev-success);
+}
+
+.it-bank-steps li.is-done::before {
+  border-color: var(--ev-success);
+  color: #fff;
+  background: var(--ev-success);
+  content: "✓";
+}
+
+@keyframes it-bank-progress { from { transform: scaleX(0); } }
+@keyframes it-bank-spin { to { transform: rotate(360deg); } }
+@keyframes it-bank-fade { from { opacity: 0; } }
+
+/* My orders (OrdersPage.tsx) */
+.my-orders {
+  display: grid;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.my-order {
+  padding: 22px 24px;
+}
+
+.my-order-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.my-order-head h2 {
+  margin: 0 0 2px;
+  font-size: 20px;
+}
+
+.my-order-status {
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.my-order-status.is-progress { color: var(--ev-brand-text); background: var(--ev-tint); }
+.my-order-status.is-done { color: var(--ev-success); background: rgb(29 107 52 / 10%); }
+.my-order-status.is-ready { color: #1f5a8a; background: #e6f0fa; }
+.my-order-status.is-off { color: #6b6b6b; background: #f0f0f0; }
+.my-order-status.is-wait { color: var(--ev-danger); background: rgb(163 41 15 / 9%); }
+
+.my-order-items {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  list-style: none;
+}
+
+.my-order-items li {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 14px;
+}
+
+.my-order-items .it-thumb {
+  width: 54px;
+  height: 54px;
+}
+
+.my-order-items a {
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.my-order-items a:hover {
+  color: var(--ev-brand-text);
+  text-decoration: underline;
+}
+
+.my-order-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.my-order-track {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: stage;
+}
+
+.my-order-track li {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  color: #9a9a9a;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  counter-increment: stage;
+}
+
+.my-order-track li::before {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 2px solid #ddd;
+  border-radius: 50%;
+  background: #fff;
+  content: counter(stage);
+  font-size: 12px;
+}
+
+/* the line joining one step to the next */
+.my-order-track li + li::after {
+  position: absolute;
+  top: 12px;
+  right: 50%;
+  width: 100%;
+  height: 2px;
+  background: #ddd;
+  content: "";
+}
+
+.my-order-track li.is-done,
+.my-order-track li.is-current {
+  color: var(--ink);
+}
+
+.my-order-track li.is-done::before {
+  border-color: var(--ev-success);
+  color: #fff;
+  background: var(--ev-success);
+  content: "✓";
+}
+
+.my-order-track li.is-current::before {
+  border-color: var(--brand);
+  color: #fff;
+  background: var(--brand);
+}
+
+.my-order-track li.is-done + li::after,
+.my-order-track li.is-done + li.is-current::after {
+  background: var(--ev-success);
 }

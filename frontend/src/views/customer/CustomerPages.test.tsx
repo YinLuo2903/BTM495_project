@@ -73,9 +73,10 @@ describe("customer widgets", () => {
     await screen.findByText("Choose an available date on the calendar to see open times.");
   });
 
-  it("shows unavailable order history", () => {
+  it("asks guests to sign in to see their orders", async () => {
+    vi.stubGlobal("localStorage", { getItem: () => null, setItem() {}, removeItem() {} });
     render(<CustomerPage page="orders" />);
-    expect(screen.getByText(/Personal order history/)).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Sign in to see your orders" })).toBeTruthy();
   });
 
   it("toggles password visibility and accessible state", () => {

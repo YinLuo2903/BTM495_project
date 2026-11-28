@@ -10,7 +10,7 @@ export default defineConfig({
       name: "legacy-page-urls",
       configureServer(server) {
         server.middlewares.use((request, _response, next) => {
-          if (/^\/(?:views\/(?:customer|admin)\/[a-z]+\.html|views\/index\.html|view\/index\.html)(?:\?.*)?$/.test(request.url || "")) {
+          if (/^\/(?:views\/(?:customer|admin)\/[a-z-]+\.html|views\/index\.html|view\/index\.html)(?:\?.*)?$/.test(request.url || "")) {
             request.url = "/index.html";
           }
           next();

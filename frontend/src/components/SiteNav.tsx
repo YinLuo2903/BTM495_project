@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, type Item } from "../services/api";
 import type { Session } from "../services/session";
+import { ADMIN_HOME_URL } from "../urls";
 import { Brand } from "./Brand";
 
 const HOME_URL = "/views/customer/index.html";
 const ITEMS_URL = "/views/customer/items.html";
 const CART_URL = "/views/customer/cart.html";
 const PROFILE_URL = "/views/customer/profile.html";
-const ADMIN_HOME_URL = "/views/admin/index.html";
 
 // Profile and Create account are not menu links: they live in the account area
 // (signed-in name → My Profile; guests see Sign In · Create account).
@@ -23,7 +23,7 @@ const subLinks: Record<string, [string, string][]> = {
 };
 
 const isCurrent = (href: string) => window.location.pathname === href
-  || (href === HOME_URL && ["/views/customer/", "/views/customer"].includes(window.location.pathname));
+  || (href === HOME_URL && ["/", "/views/index.html", "/view/index.html", "/views/customer/", "/views/customer"].includes(window.location.pathname));
 
 const Chevron = () => <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 4.5 6 8l3.5-3.5" /></svg>;
 
@@ -120,6 +120,7 @@ export function SiteNav({ session, cartCount, message, busy, onSignOut }: {
                 <span>{session.user.name}</span>
               </a>}>
               <li><a href={accountHref}>{session.user.is_admin ? "Admin dashboard" : "My profile"}</a></li>
+              {!session.user.is_admin && <li><a href="/views/customer/orders.html">My orders</a></li>}
               <li><button type="button" disabled={busy} onClick={onSignOut}>Sign Out</button></li>
             </Dropdown>
             : <>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Agenda, type AgendaEntry } from "../../components/Agenda";
 import { photoStyle } from "../../components/Photo";
 import { TrendChart, type TrendPoint } from "../../components/TrendChart";
+import { DRY_RUN_URL } from "../../urls";
 import { api, errorMessage, formatAmount, type Item, type ShopEvent } from "../../services/api";
 import {
   fetchAppointments, fetchCustomers, fetchDashboard, fetchStockHistory, plural, statusName,
@@ -55,17 +56,18 @@ export function AdminDashboard({ today = new Date() }: { today?: Date }) {
       <div>
         <h1>Dashboard <span className="adm-month">{monthName}</span></h1>
         <p>Overview of the shop’s customers, orders, events and repairs.</p>
+        <a className="adm-btn adm-btn-ghost adm-btn-sm adm-dry-run" href={DRY_RUN_URL}>Open local dry run</a>
       </div>
     </div>
     {error && <div className="adm-alert" role="alert">{error} <button type="button" className="adm-text-btn" onClick={() => void load()}>Retry</button></div>}
     {!data ? !error && <p role="status">Loading dashboard…</p> : <>
       <Kpis data={data} monthKey={monthKey} todayKey={todayKey} />
+      <Trends data={data} today={today} months={months} onMonths={setMonths} />
       <div className="adm-glance">
         <Agenda id="adm-next" title="Next up" state={{ kind: "ready", value: nextUp(data, today) }}
           empty="Nothing booked in the coming weeks." guest="" />
         <NeedsAttention data={data} todayKey={todayKey} />
       </div>
-      <Trends data={data} today={today} months={months} onMonths={setMonths} />
       <WeeklySchedule data={data} today={today} offset={weekOffset} onOffset={setWeekOffset} />
     </>}
   </>;

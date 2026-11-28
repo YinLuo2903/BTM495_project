@@ -69,6 +69,7 @@ class StatusID(IntEnum):
     PENDING = 1
     COMPLETED = 2
     CANCELLED = 3
+    READY = 4  # orders only: ready for pick-up at the shop
 
 class DatabaseValues:
     ORDER_STATUS_ID_PENDING = StatusID.PENDING

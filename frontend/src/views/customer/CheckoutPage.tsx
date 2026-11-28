@@ -14,10 +14,41 @@ type State =
   | { kind: "paid"; order: PaidOrder; remaining: number };
 
 const EMPTY_CARD: CardDetails = { cardholderName: "", cardNumber: "", expiry: "", cvc: "" };
+/** The card the demo payment gateway approves (backend/models/payment.py). */
+export const DEMO_CARD: CardDetails = { cardholderName: "Demo Customer", cardNumber: "4242 4242 4242 4242", expiry: "12/30", cvc: "123" };
 const plural = (count: number) => `${count} ${count === 1 ? "item" : "items"}`;
 
 /** checkout.html: pay for the items selected in the shopping cart. */
-export function CheckoutPage() {
+/** How long the simulated bank connection takes; the real request runs meanwhile. */
+export const BANK_DELAY_MS = 8000;
+const BANK_STEPS = ["Connecting to your bank", "Verifying card details", "Authorizing payment", "Confirming your order"];
+
+/** Full-screen "talking to the bank" screen with a progress bar and the current step. */
+function BankProgress({ ms, total }: { ms: number; total: number }) {
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    if (!ms) return;
+    const timer = setInterval(() => setStep(n => Math.min(n + 1, BANK_STEPS.length - 1)), ms / BANK_STEPS.length);
+    return () => clearInterval(timer);
+  }, [ms]);
+  return <div className="it-bank" role="dialog" aria-modal="true" aria-labelledby="it-bank-title">
+    <div className="it-bank-card">
+      <span className="it-bank-lock" aria-hidden="true">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+      </span>
+      <h2 id="it-bank-title">Processing payment</h2>
+      <p className="it-bank-amount">{formatAmount(total)}</p>
+      <div className="it-bank-bar" role="progressbar" aria-label="Payment progress">
+        <span style={{ animationDuration: `${ms}ms` }} />
+      </div>
+      <ol className="it-bank-steps">{BANK_STEPS.map((label, n) =>
+        <li key={label} className={n < step ? "is-done" : n === step ? "is-current" : undefined}>{label}</li>)}</ol>
+      <p className="ev-muted it-small" role="status" aria-live="polite">{BANK_STEPS[step]}… Please don’t close this page.</p>
+    </div>
+  </div>;
+}
+
+export function CheckoutPage({ bankDelayMs = BANK_DELAY_MS }: { bankDelayMs?: number }) {
   const [state, setState] = useState<State>({ kind: "loading" });
   const [card, setCard] = useState<CardDetails>(EMPTY_CARD);
   const [touched, setTouched] = useState<Partial<Record<keyof CardDetails, boolean>>>({});
@@ -64,10 +95,14 @@ export function CheckoutPage() {
     setSubmitting(true);
     setPayError("");
     try {
-      const order = await payForItems(state.lines.map(line => line.item_id), {
+      // The answer is shown only once the simulated bank connection has finished.
+      const wait = new Promise(resolve => setTimeout(resolve, bankDelayMs));
+      const payment = payForItems(state.lines.map(line => line.item_id), {
         cardholder_name: card.cardholderName.trim(),
         card_number: digitsOnly(card.cardNumber), expiration_date: card.expiry, cvv: card.cvc,
       });
+      await Promise.allSettled([wait, payment]);
+      const order = await payment;
       setCard(EMPTY_CARD); // never keep card details around after paying
       const remaining = await fetchCart().then(cart => cart.count).catch(() => 0);
       setState({ kind: "paid", order, remaining });
@@ -107,7 +142,8 @@ export function CheckoutPage() {
         <div><dt>Card</dt><dd>Ending in {state.order.card_last4}</dd></div>
       </dl>
       <div className="it-detail-actions">
-        <a className="it-add it-link-button" href="items.html">Continue shopping</a>
+        <a className="it-add it-link-button" href="orders.html">View my orders</a>
+        <a href="items.html">Continue shopping</a>
         {state.remaining > 0 && <a href="cart.html">Back to shopping cart ({plural(state.remaining)})</a>}
       </div>
     </section>
@@ -119,7 +155,10 @@ export function CheckoutPage() {
     : <div className="it-cart">
       <section className="ev-card it-pay" aria-labelledby="it-pay-title">
         <h2 id="it-pay-title">Payment details</h2>
-        <p className="it-demo-note">Demo payment only — do not enter a real card. Use <strong>4242 4242 4242 4242</strong> to be approved; other valid numbers are declined.</p>
+        <div className="it-demo-note">
+          <p>Demo payment only — do not enter a real card. Use <strong>4242 4242 4242 4242</strong> to be approved; other valid numbers are declined.</p>
+          <button type="button" className="demo-fill" onClick={() => { setCard(DEMO_CARD); setTouched({}); setPayError(""); }}>Fill in demo card</button>
+        </div>
         <form noValidate onSubmit={submit}>
           <Field id="cardholder-name" label="Cardholder name" error={shown("cardholderName")}>
             <input id="cardholder-name" autoComplete="cc-name" placeholder="Name as it appears on the card" maxLength={50}
@@ -148,6 +187,7 @@ export function CheckoutPage() {
             </Field>
           </div>
           {payError && <p className="ev-alert" role="alert">{payError}</p>}
+          {submitting && <BankProgress ms={bankDelayMs} total={state.total} />}
           <button type="submit" className="it-add it-pay-submit" disabled={!valid || submitting}>
             {submitting ? "Processing payment…" : `Complete order · ${formatAmount(state.total)}`}
           </button>
@@ -157,6 +197,7 @@ export function CheckoutPage() {
       <aside className="ev-card it-cart-summary" aria-label="Order summary">
         <h2>Order summary</h2>
         <ul className="it-summary-lines">{state.lines.map(line => <li key={line.item_id}>
+          {line.image_path && <img className="it-summary-thumb" src={line.image_path} alt="" />}
           <span><span className="it-summary-name">{line.name}</span><span className="ev-muted it-small">Qty {line.quantity}</span></span>
           <span>{formatAmount(line.subtotal)}</span>
         </li>)}</ul>

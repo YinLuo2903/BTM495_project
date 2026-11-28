@@ -41,7 +41,7 @@ describe("CheckoutSteps", () => {
     const view = render(<CartPage />);
     expect(steps()[0].getAttribute("aria-current")).toBe("step");
     view.unmount();
-    render(<CheckoutPage />);
+    render(<CheckoutPage bankDelayMs={0} />);
     expect(steps()[1].getAttribute("aria-current")).toBe("step");
   });
 });

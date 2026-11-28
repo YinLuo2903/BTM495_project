@@ -15,7 +15,7 @@ from backend.apis.local_website_api import (
     ensure_local_demo_login,
 )
 from backend.utils.logger import configure_backend_logging, get_logger
-from database.load_mockdata import has_shop_data, load_mockdata
+from database.load_mockdata import SAMPLE_DATA_VERSION, has_shop_data, load_mockdata, sample_data_version
 from database.sqlite_database import DATA_DIR, initialize_database
 
 DEFAULT_HOST = "127.0.0.1"
@@ -114,15 +114,19 @@ def main() -> None:
         logger.info("Initializing SQLite database schema.")
         initialize_database()
         logger.info("Database initialization complete.")
-        # Fresh database (new clone or machine): fill it with the sample CSV data.
+        # Fresh database (new clone or machine): fill it with the sample CSV data. A database
+        # from an older version gets the newly added sample rows once; nothing else changes.
         # This runs before the demo logins so the CSV rows keep their IDs.
         if args.no_mockdata:
             logger.info("Skipping sample data (--no-mockdata).")
-        elif has_shop_data():
-            logger.info("Shop data found; sample data not loaded.")
-        else:
+        elif not has_shop_data():
             counts = load_mockdata()
             logger.info("Loaded sample data: %d rows from %d CSV files.", sum(counts.values()), len(counts))
+        elif sample_data_version() < SAMPLE_DATA_VERSION:
+            load_mockdata(upgrade=True)
+            logger.info("Added the new sample data (version %d) to the existing database.", SAMPLE_DATA_VERSION)
+        else:
+            logger.info("Shop data found; sample data is up to date.")
         ensure_local_demo_login()
         logger.info("Local demo login is ready (login@example.com).")
         ensure_local_admin_login()

@@ -57,6 +57,21 @@ it("logs in without navigating and handles logout", async () => {
   await waitFor(() => expect(signOut).toHaveBeenCalledOnce());
 });
 
+it("fills in the demo admin and customer accounts", async () => {
+  setupFetch();
+  vi.mocked(signIn).mockResolvedValue({ name: "Admin", is_admin: true });
+  render(<DemoPage />);
+  const email = screen.getByLabelText("Email") as HTMLInputElement;
+  const password = screen.getByLabelText("Password", { selector: "input" }) as HTMLInputElement;
+  fireEvent.click(screen.getByRole("button", { name: "Fill in admin" }));
+  expect([email.value, password.value]).toEqual(["admin@lpvr.com", "123456789"]);
+  fireEvent.submit(screen.getByRole("button", { name: "Sign in" }).closest("form")!);
+  expect(await screen.findByText("Signed in as Admin (Admin).")).toBeTruthy();
+  expect(signIn).toHaveBeenCalledWith("admin@lpvr.com", "123456789");
+  fireEvent.click(screen.getByRole("button", { name: "Fill in customer" }));
+  expect([email.value, password.value]).toEqual(["login@example.com", "1234"]);
+});
+
 it("shows login progress, rejects repeat submission and reports errors", async () => {
   setupFetch();
   let reject!: (error: Error) => void;

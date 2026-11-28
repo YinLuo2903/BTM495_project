@@ -139,7 +139,7 @@ export function CartPage() {
           return <li key={line.item_id} className={`it-row it-cart-row${selected ? "" : " it-cart-row-off"}`} aria-busy={rowBusy || undefined}>
             <input type="checkbox" className="it-cart-select" checked={selected} onChange={() => toggle(line.item_id)}
               aria-label={`Select ${line.name}`} />
-            <ItemImage />
+            <ItemImage src={line.image_path} />
             <div className="it-info">
               <h2 className="it-name"><a href={`item.html?id=${line.item_id}`}>{line.name}</a></h2>
               {line.category && <p className="it-meta">{line.category}</p>}

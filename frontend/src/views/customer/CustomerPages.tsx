@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "rea
 import { getSession, sessionApi, signIn, type Session } from "../../services/session";
 import { api, errorMessage, type CustomerProfile } from "../../services/api";
 import { Brand } from "../../components/Brand";
+import { DEMO_LOGINS, DemoAccountButtons } from "../../components/DemoAccounts";
+import { ADMIN_HOME_URL } from "../../urls";
 import { PhotoBand, photoStyle } from "../../components/Photo";
 import { AppointmentsPage } from "./AppointmentsPage";
 import { CartPage } from "./CartPage";
@@ -12,17 +14,12 @@ import { ItemDetailPage } from "./ItemDetailPage";
 import { ItemsPage } from "./ItemsPage";
 import { NextUp } from "../../components/Agenda";
 import { EventShowcase } from "./EventShowcase";
+import { OrdersPage } from "./OrdersPage";
 import { ProductShowcase } from "./ProductShowcase";
 
 function Card({ children }: { children: ReactNode }) {
   return <section className="card">{children}</section>;
 }
-
-/** Local demo accounts (created on start-up by run_local_website.py). */
-const DEMO_LOGINS = {
-  customer: { email: "login@example.com", password: "1234" },
-  admin: { email: "admin@lpvr.com", password: "123456789" },
-};
 
 function Login() {
   const formRef = useRef<HTMLFormElement>(null);
@@ -40,20 +37,11 @@ function Login() {
       const user = await signIn(String(data.get("email")), String(data.get("password")));
       form.reset();
       setVisible(false);
-      window.location.assign(user.is_admin ? "/views/admin/index.html" : "/views/customer/index.html");
+      window.location.assign(user.is_admin ? ADMIN_HOME_URL : "/views/customer/index.html");
     } catch (reason) {
       setError(errorMessage(reason));
       setBusy(false);
     }
-  }
-  /** Put a demo account into the form and move to Sign in. */
-  function fill({ email, password }: { email: string; password: string }) {
-    const form = formRef.current;
-    if (!form) return;
-    (form.elements.namedItem("email") as HTMLInputElement).value = email;
-    (form.elements.namedItem("password") as HTMLInputElement).value = password;
-    setError("");
-    form.querySelector<HTMLButtonElement>(".login-submit")?.focus();
   }
   return <section className="card login-card" aria-labelledby="login-title">
     <Brand /><h1 id="login-title">Sign in</h1>
@@ -67,11 +55,7 @@ function Login() {
       {error && <p className="error" role="alert">{error}</p>}
       <button className="login-submit" disabled={busy}>{busy ? "Signing in..." : "Sign in"}</button>
     </form>
-    <div className="login-demo">
-      <span className="muted">Local demo accounts</span>
-      <button type="button" className="login-fill" onClick={() => fill(DEMO_LOGINS.customer)}>Fill in customer</button>
-      <button type="button" className="login-fill" onClick={() => fill(DEMO_LOGINS.admin)}>Fill in admin</button>
-    </div>
+    <DemoAccountButtons formRef={formRef} onFill={() => setError("")} />
     <p className="login-signup"><a href="signup.html">Create an account</a></p>
   </section>;
 }
@@ -86,7 +70,6 @@ function Home() {
     <EventShowcase />
     <div className="sections-grid"><section className="card browse-items-section"><PhotoBand name="band-items" /><h2>Browse Items</h2><p className="section-description">Explore our collection of bike parts and tools available for use or purchase.</p><a href="items.html" className="section-link">View all items</a></section>
       <section className="card book-appointment-section"><PhotoBand name="band-appointments" /><h2>Book Appointment</h2><p className="section-description">Schedule a guided session with our expert volunteers for personalized assistance.</p><a href="appointments.html" className="section-link">View appointments</a></section></div>
-    <p><a href="/">Return to the local demo</a></p>
   </>;
 }
 
@@ -136,7 +119,7 @@ function Signup() {
   if (session) return <Card><h2>You're already signed in</h2>
     <p role="status">You are signed in as <strong>{session.user.name}</strong>.</p>
     <p>{session.user.is_admin
-      ? <a href="/views/admin/index.html">Go to the admin dashboard</a>
+      ? <a href={ADMIN_HOME_URL}>Go to the admin dashboard</a>
       : <a href="profile.html">Go to My Profile</a>}</p>
     <p className="muted">To create a different account, sign out first.</p></Card>;
   return <Card><h2>Create account</h2>
@@ -261,7 +244,7 @@ export function CustomerPage({ page }: { page: string }) {
     case "events": content = <EventsPage />; break;
     case "cart": content = <CartPage />; break;
     case "checkout": content = <CheckoutPage />; break;
-    case "orders": content = <Card><h2>Order history</h2><p className="customer-notice">Personal order history, statuses, and details require customer sessions and are not available yet.</p></Card>; break;
+    case "orders": content = <OrdersPage />; break;
     case "appointments": content = <AppointmentsPage />; break;
     case "credits": content = <CreditsPage />; break;
     default: content = <Card><h1>Page not found</h1></Card>;

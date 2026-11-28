@@ -9,3 +9,4 @@ customer_id,customer_code,first_name,last_name,email,phone,address,password_hash
 8,LPVR008,Ethan,Cote,ethan.cote@example.com,514-555-0208,"602 Rue Beaubien E, Montreal, QC H2S 1S5",hash_cust_008,2026-08-10 12:00:00
 9,LPVR009,Mia,Leblanc,mia.leblanc@example.com,514-555-0209,"77 Rue Wellington, Montreal, QC H3C 1T1",hash_cust_009,2026-09-01 18:00:00
 10,LPVR010,Jacob,Simard,jacob.simard@example.com,438-555-0210,"240 Rue Masson, Montreal, QC H1Y 1V9",hash_cust_010,2026-10-01 10:00:00
+11,LPVR011,Local,Dry-Run,login@example.com,514-555-0211,"7141 Rue Sherbrooke O, Montreal, QC H4B 1R6",pbkdf2_sha256$600000$nk0UQEwv6R+sgq+XX8qRvQ==$4m3kt4QlZe8Vm5+tACgLo92Ivfn4FThi8LFmHFNYmsk=,2026-05-02 10:00:00

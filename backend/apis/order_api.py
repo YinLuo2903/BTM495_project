@@ -15,6 +15,44 @@ class OrderService:
     def __init__(self, database_path: str | Path = DB_PATH) -> None:
         self.database = SQLiteQuery(database_path)
 
+    def forCustomer(self, customerID: int) -> Response:
+        """The customer's orders, newest first, with their items and payment."""
+        if type(customerID) is not int or customerID <= 0:
+            return Response.warning("A valid customer ID is required.")
+        with self.database.session(read_only=True) as session:
+            orders = session.fetch_all(
+                "SELECT order_id, orderDateTime, totalAmount, statusID FROM orders"
+                " WHERE customer_id = ? ORDER BY orderDateTime DESC, order_id DESC",
+                (customerID,),
+            )
+            ids = [row[0] for row in orders]
+            marks = ",".join("?" * len(ids))
+            lines = session.fetch_all(
+                "SELECT oi.order_id, oi.item_id, i.name, i.image_path, oi.quantity, oi.unit_price"
+                f" FROM order_item oi LEFT JOIN item i ON i.item_id = oi.item_id WHERE oi.order_id IN ({marks})"
+                " ORDER BY oi.order_id, i.name",
+                tuple(ids),
+            ) if ids else []
+            payments = session.fetch_all(
+                "SELECT order_id, paymentDateTime, amount, paymentMethod, statusID FROM payment"
+                f" WHERE order_id IN ({marks}) ORDER BY paymentDateTime",
+                tuple(ids),
+            ) if ids else []
+        items: dict[int, list] = {}
+        for order_id, item_id, name, image, quantity, price in lines:
+            items.setdefault(order_id, []).append({
+                "item_id": item_id, "name": name or f"Item #{item_id}", "image_path": image,
+                "quantity": quantity, "unit_price": price,
+            })
+        paid: dict[int, dict] = {}
+        for order_id, when, amount, method, status in payments:
+            paid[order_id] = {"date": when, "amount": amount, "method": method, "status_id": status}
+        return Response.ok("Orders retrieved.", {"orders": [
+            {"order_id": order_id, "date": when, "total": total, "status_id": status,
+             "items": items.get(order_id, []), "payment": paid.get(order_id)}
+            for order_id, when, total, status in orders
+        ]})
+
     def checkout(self, cart: ShoppingCart, customerID: int) -> Response:
         if cart.customerID != customerID:
             raise ValueError("Shopping cart does not belong to this customer.")

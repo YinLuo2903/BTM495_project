@@ -91,7 +91,7 @@ class DatabaseSchemaTests(unittest.TestCase):
 
     def test_order_status_names_exist_in_schema(self) -> None:
         statuses = {row[0] for row in self.connection.execute("SELECT name FROM status")}
-        self.assertEqual(statuses, {"Pending", "Completed", "Cancelled"})
+        self.assertEqual(statuses, {"Pending", "Completed", "Cancelled", "Ready"})
         self.assertEqual(
             self.connection.execute(
                 "SELECT name FROM status WHERE statusID = ?",

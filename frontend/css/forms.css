@@ -128,7 +128,8 @@
   margin-right: auto;
 }
 
-.login-card .login-fill {
+/* "Fill in customer / admin / demo card" buttons on the sign-in, demo and checkout pages. */
+button.demo-fill {
   min-height: 34px;
   padding: 6px 14px;
   border: 1.5px solid var(--line);
@@ -139,7 +140,7 @@
   font-weight: 700;
 }
 
-.login-card .login-fill:hover:not(:disabled) {
+button.demo-fill:hover:not(:disabled) {
   border-color: var(--brand);
   background: var(--ev-tint);
   box-shadow: none;

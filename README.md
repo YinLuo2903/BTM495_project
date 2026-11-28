@@ -46,7 +46,7 @@ from source, the database and uploads stay in `database/`.
 | --- | --- |
 | Customer site | `http://localhost:8765/views/customer/index.html` |
 | Admin dashboard | `http://localhost:8765/views/admin/index.html` |
-| Local demo (developer test page) | `http://localhost:8765/` |
+| Local dry run (developer test page) | `http://localhost:8765/views/admin/dry-run.html`, or **Open local dry run** on the admin dashboard |
 
 Customers and the admin share one **Sign In** page: customers land on the home
 page, the admin lands on the dashboard. You stay signed in for 24 hours or

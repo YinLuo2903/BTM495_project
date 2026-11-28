@@ -1,5 +1,6 @@
 import { useEffect, useState, type ComponentType } from "react";
 import { Brand } from "../../components/Brand";
+import { ADMIN_HOME_URL } from "../../urls";
 import { errorMessage } from "../../services/api";
 import { signOut, watchSession, type Session } from "../../services/session";
 import { AdminDashboard } from "./AdminDashboard";
@@ -58,7 +59,7 @@ function Sidebar({ current }: { current: string }) {
 
   const name = session?.user.name ?? "";
   return <aside className="adm-side" aria-label="Admin navigation">
-    <a className="adm-brand nav-brand" href="/views/admin/index.html" aria-label="LE PETIT VÉLO ROUGE admin dashboard"><Brand /></a>
+    <a className="adm-brand nav-brand" href={ADMIN_HOME_URL} aria-label="LE PETIT VÉLO ROUGE admin dashboard"><Brand /></a>
     <div className="adm-account">
       {session ? <div className="adm-account-who">
         <span className="adm-avatar" aria-hidden="true">{name.charAt(0).toUpperCase()}</span>

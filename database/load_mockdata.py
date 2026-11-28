@@ -28,6 +28,11 @@ TABLES = [
     "orders", "order_item", "payment",
 ]
 
+# Bump when the CSVs gain rows that existing databases should receive (stored as SQLite's
+# user_version). 1: the original 10 items; 2: 80 items, 20 events, six months of history;
+# 3: the demo customer's own order history, at every pick-up stage.
+SAMPLE_DATA_VERSION = 3
+
 # Tables that only hold shop data from the CSVs (the demo logins add customers and admins).
 _SHOP_DATA_TABLES = ("item", "event", "orders", "appointment")
 
@@ -41,6 +46,12 @@ def has_shop_data(db_path: str | Path = DB_PATH) -> bool:
         )
 
 
+def sample_data_version(db_path: str | Path = DB_PATH) -> int:
+    """Which SAMPLE_DATA_VERSION this database last received (0 = before versions existed)."""
+    with closing(sqlite3.connect(db_path)) as conn:
+        return conn.execute("PRAGMA user_version").fetchone()[0]
+
+
 def copy_sample_images(upload_dir: str | Path = UPLOAD_DIR) -> None:
     """Copy the sample photos into the upload folder (existing files are kept)."""
     upload_dir = Path(upload_dir)
@@ -50,8 +61,12 @@ def copy_sample_images(upload_dir: str | Path = UPLOAD_DIR) -> None:
             shutil.copyfile(image, upload_dir / image.name)
 
 
-def load_mockdata(db_path: str | Path = DB_PATH, upload_dir: str | Path = UPLOAD_DIR) -> dict[str, int]:
-    """Insert every CSV row, skipping rows whose key already exists. Returns rows read per table."""
+def load_mockdata(db_path: str | Path = DB_PATH, upload_dir: str | Path = UPLOAD_DIR, upgrade: bool = False) -> dict[str, int]:
+    """Insert every CSV row, skipping rows whose key already exists. Returns rows read per table.
+
+    With `upgrade`, the database already has older sample data: new rows are added, and stock
+    history only for items that have none yet, so existing items keep a consistent history.
+    """
     # Create the schema and migrate older databases (e.g. the customer name split).
     initialize_database(db_path)
     copy_sample_images(upload_dir)
@@ -64,9 +79,14 @@ def load_mockdata(db_path: str | Path = DB_PATH, upload_dir: str | Path = UPLOAD
                 cols = reader.fieldnames
                 # Empty CSV fields become NULL (needed for old_quantity and admin_id)
                 rows = [tuple(r[c] if r[c] != "" else None for c in cols) for r in reader]
+            if upgrade and table == "inventory_history":
+                tracked = {item_id for (item_id,) in conn.execute("SELECT DISTINCT item_id FROM inventory_history")}
+                item_col = cols.index("item_id")
+                rows = [row for row in rows if int(row[item_col]) not in tracked]
             sql = f"INSERT OR IGNORE INTO {table} ({', '.join(cols)}) VALUES ({', '.join('?' * len(cols))})"
             conn.executemany(sql, rows)
             counts[table] = len(rows)
+        conn.execute(f"PRAGMA user_version = {SAMPLE_DATA_VERSION}")
         conn.commit()
     return counts
 

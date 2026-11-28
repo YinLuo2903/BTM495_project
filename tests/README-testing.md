@@ -14,8 +14,9 @@ local demo):
 
 The customer and admin screens are React components in
 [`frontend/src`](frontend/src). The Python server serves their Vite build at
-the existing `/views/customer/*.html` and `/views/admin/*.html` URLs. The
-local demo at `/` is also a React page. The only source HTML is the minimal
+the existing `/views/customer/*.html` and `/views/admin/*.html` URLs; `/` opens
+the customer home page. The local dry-run page (`/views/admin/dry-run.html`,
+opened from the admin dashboard) is also a React page. The only source HTML is the minimal
 Vite entry shell; page content is implemented in TSX.
 
 To build or test the frontend explicitly:

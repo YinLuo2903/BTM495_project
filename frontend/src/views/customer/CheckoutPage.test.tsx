@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { CheckoutPage } from "./CheckoutPage";
 import { formatCardNumber, formatExpiry, isValidCardholderName, passesLuhn, validateCard } from "./checkoutValidation";
 import { CART_CHANGE_EVENT, type CartSummary } from "../../services/cart";
@@ -98,7 +98,7 @@ describe("CheckoutPage", () => {
   it("lists only the items selected in the cart", async () => {
     signIn();
     mockFetch();
-    render(<CheckoutPage />);
+    render(<CheckoutPage bankDelayMs={0} />);
     expect(screen.getByRole("heading", { level: 1, name: "Checkout" })).toBeTruthy();
     const summary = await screen.findByRole("complementary", { name: "Order summary" });
     expect(within(summary).getByText("Road Bike Carbon")).toBeTruthy();
@@ -112,7 +112,7 @@ describe("CheckoutPage", () => {
   it("enables Complete order only when every card field is valid, and explains errors", async () => {
     signIn();
     mockFetch();
-    render(<CheckoutPage />);
+    render(<CheckoutPage bankDelayMs={0} />);
     const button = await screen.findByRole("button", { name: "Complete order · $2,248.90 CAD" });
     expect(button.matches(":disabled")).toBe(true);
 
@@ -144,7 +144,7 @@ describe("CheckoutPage", () => {
     const onChange = (event: Event) => counts.push((event as CustomEvent<CartSummary>).detail.count);
     window.addEventListener(CART_CHANGE_EVENT, onChange);
     const fetchMock = mockFetch();
-    render(<CheckoutPage />);
+    render(<CheckoutPage bankDelayMs={0} />);
     await screen.findByRole("complementary", { name: "Order summary" });
     fillCard();
     fireEvent.click(screen.getByRole("button", { name: "Complete order · $2,248.90 CAD" }));
@@ -162,10 +162,46 @@ describe("CheckoutPage", () => {
     window.removeEventListener(CART_CHANGE_EVENT, onChange);
   });
 
+  it("fills in the approved demo card in one click", async () => {
+    signIn();
+    const fetchMock = mockFetch();
+    render(<CheckoutPage bankDelayMs={0} />);
+    await screen.findByRole("complementary", { name: "Order summary" });
+    fireEvent.click(screen.getByRole("button", { name: "Fill in demo card" }));
+    expect(["Cardholder name", "Card number", "Expiry date", "CVC"].map(label => (screen.getByLabelText(label) as HTMLInputElement).value))
+      .toEqual(["Demo Customer", "4242 4242 4242 4242", "12/30", "123"]);
+    fireEvent.click(screen.getByRole("button", { name: "Complete order · $2,248.90 CAD" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Payment successful" })).toBeTruthy();
+    const pay = fetchMock.mock.calls.find(([url]) => url === "/api/my-checkout")!;
+    expect(JSON.parse(String(pay[1]!.body))).toMatchObject({ card_number: "4242424242424242", expiration_date: "12/30", cvv: "123" });
+  });
+
+  it("shows the bank connection for 8 seconds before the result", async () => {
+    signIn();
+    mockFetch();
+    render(<CheckoutPage />);
+    await screen.findByRole("complementary", { name: "Order summary" });
+    vi.useFakeTimers();
+    try {
+      fireEvent.click(screen.getByRole("button", { name: "Fill in demo card" }));
+      fireEvent.click(screen.getByRole("button", { name: "Complete order · $2,248.90 CAD" }));
+      const bank = screen.getByRole("dialog", { name: "Processing payment" });
+      expect(within(bank).getByRole("status").textContent).toContain("Connecting to your bank");
+      await act(async () => { await vi.advanceTimersByTimeAsync(4100); });
+      expect(within(bank).getByRole("status").textContent).toContain("Authorizing payment");
+      expect(screen.queryByRole("heading", { name: "Payment successful" })).toBeNull(); // still waiting
+      await act(async () => { await vi.advanceTimersByTimeAsync(4000); });
+    } finally {
+      vi.useRealTimers();
+    }
+    expect(await screen.findByRole("heading", { level: 1, name: "Payment successful" })).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
   it("keeps the form and explains a declined card", async () => {
     signIn();
     mockFetch(() => ({ status: 402, body: { status: "error", message: "Payment declined. Check your card details or use a different card." } }));
-    render(<CheckoutPage />);
+    render(<CheckoutPage bankDelayMs={0} />);
     await screen.findByRole("complementary", { name: "Order summary" });
     fillCard("4000000000000002");
     fireEvent.click(screen.getByRole("button", { name: "Complete order · $2,248.90 CAD" }));
@@ -176,13 +212,13 @@ describe("CheckoutPage", () => {
 
   it("asks guests to sign in and handles an empty selection", async () => {
     mockFetch();
-    const view = render(<CheckoutPage />);
+    const view = render(<CheckoutPage bankDelayMs={0} />);
     expect(await screen.findByRole("heading", { name: "Sign in to check out" })).toBeTruthy();
     view.unmount();
 
     signIn();
     localStorage.setItem("lpvr.cart.unselected", "[2,3,9]");
-    render(<CheckoutPage />);
+    render(<CheckoutPage bankDelayMs={0} />);
     expect(await screen.findByRole("heading", { name: "No items selected" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Go to shopping cart" }).getAttribute("href")).toBe("cart.html");
   });

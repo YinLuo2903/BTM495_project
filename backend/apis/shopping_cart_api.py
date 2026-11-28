@@ -214,12 +214,13 @@ class ShoppingCartAPI:
                     DatabaseColumns.DESCRIPTION,
                     DatabaseColumns.CATEGORY,
                     DatabaseColumns.BRAND,
+                    DatabaseColumns.IMAGE_PATH,
                 ),
                 where=(SQLCondition(DatabaseColumns.ITEM_ID, item_id),),
             )
             if row is None:
                 raise ValueError(f"Item {item_id} in the cart does not exist.")
-            name, description, category, brand = row
+            name, description, category, brand, image_path = row
             stock = InventoryList.stockOf(database, item_id)
             item = Item(
                 item_id,
@@ -229,6 +230,7 @@ class ShoppingCartAPI:
                 category or "",
                 brand or "",
                 stock,
+                image_path,
             )
             items[item_id] = CartItem(item, entry["quantity"])
         return items

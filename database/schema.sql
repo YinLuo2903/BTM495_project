@@ -75,7 +75,8 @@ CREATE TABLE IF NOT EXISTS status (
 INSERT OR IGNORE INTO status (statusID, name) VALUES
     (1, 'Pending'),
     (2, 'Completed'),
-    (3, 'Cancelled');
+    (3, 'Cancelled'),
+    (4, 'Ready');  -- orders only: paid, packed, waiting at the shop for pick-up
 
 -- 3. Event Table
 CREATE TABLE IF NOT EXISTS event (

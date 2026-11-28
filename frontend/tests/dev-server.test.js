@@ -26,7 +26,7 @@ it("proxies API and assets while serving React routes", async () => {
     const response = await fetch(origin + path);
     expect(await response.text()).toBe(`backend:${path}`);
   }
-  for (const path of ["/", "/?test=1", "/view/index.html", "/views/index.html", "/views/customer/item.html?id=1"]) {
+  for (const path of ["/", "/?test=1", "/view/index.html", "/views/index.html", "/views/customer/item.html?id=1", "/views/admin/dry-run.html"]) {
     const response = await fetch(origin + path);
     expect(response.status).toBe(200);
     expect(await response.text()).toContain('/src/main.tsx');

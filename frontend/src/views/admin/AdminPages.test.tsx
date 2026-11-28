@@ -114,6 +114,7 @@ describe("dashboard", () => {
     const value = (label: string) => within(kpi(label)).getByText(/./, { selector: ".adm-kpi-value" }).textContent;
     expect(await screen.findByRole("link", { name: /^Customers: / })).toBeTruthy();
     expect(kpi("Pending orders").getAttribute("href")).toBe("orders.html");
+    expect(screen.getByRole("link", { name: "Open local dry run" }).getAttribute("href")).toBe("/views/admin/dry-run.html");
     expect(value("Customers")).toBe("2");
     expect(value("Paid revenue")).toBe("$144.93 CAD"); // October's payment is left out
     expect(value("Pending orders")).toBe("1");
@@ -186,6 +187,19 @@ describe("view-and-delete modules", () => {
     fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Delete record" }));
     await waitFor(() => expect(calls(fetch, "DELETE", "/api/admin/customers/2")).toHaveLength(1));
     expect((await screen.findByText("Liam Bouchard deleted.")).closest("[role=status]")).toBeTruthy();
+  });
+
+  it("moves a paid order to ready for pick-up, then picked up", async () => {
+    const fetch = setupFetch();
+    render(<AdminPage page="orders" />);
+    fireEvent.click(await screen.findByRole("button", { name: "#6" }));
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Mark ready for pick-up" }));
+    await waitFor(() => expect(calls(fetch, "PATCH", "/api/orders/6")).toHaveLength(1));
+    expect(JSON.parse(String(calls(fetch, "PATCH", "/api/orders/6")[0][1]!.body))).toEqual({ status_id: 4 });
+    // An unpaid order can't be marked ready.
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    fireEvent.click(await screen.findByRole("button", { name: "#8" }));
+    expect(within(screen.getByRole("dialog")).queryByRole("button", { name: /^Mark / })).toBeNull();
   });
 
   it("shows orders with payment state and confirms before deleting", async () => {

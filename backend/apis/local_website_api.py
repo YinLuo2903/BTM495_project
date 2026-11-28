@@ -22,7 +22,7 @@ from backend.apis.profile_api import ManageProfile
 from backend.models.customer import Customer
 from backend.apis.session_api import SessionManager
 from backend.models.payment import Payment, PaymentGateway, PaymentMethod, PaymentStatus
-from backend.utils.constants import DatabaseColumns, DatabaseTables, DatabaseValues
+from backend.utils.constants import DatabaseColumns, DatabaseTables, DatabaseValues, StatusID
 from backend.utils.http import HTTPRequestError, read_json_object, send_json
 from backend.utils.logger import (
     configure_backend_logging,
@@ -56,6 +56,7 @@ FRONTEND_PAGES = {
     *(f"/views/admin/{page}.html" for page in (
         "index", "customers", "events", "appointments", "orders", "payments",
         "inventory", "items",  # items.html is kept as an alias of inventory.html
+        "dry-run",  # the local dry-run page, opened from the admin dashboard
     )),
 }
 # Images uploaded from the admin dashboard; served at /uploads/<name>.
@@ -368,6 +369,7 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
             or self._my_events("GET")
             or self._appointments("GET")
             or self._my_cart("GET")
+            or self._my_orders("GET")
         ):
             return
         request_path = urlsplit(self.path).path
@@ -413,6 +415,9 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
         except HTTPRequestError as error:
             self._send_json({"status": "error", "message": str(error)}, error.status_code)
             return
+        if resource == "orders" and "status_id" in payload:
+            self._set_order_status(record_id, payload["status_id"])
+            return
         amount = payload.get("amount")
         if type(amount) not in (int, float) or not 0 < amount < 1_000_000_000:
             self._send_json(
@@ -421,6 +426,29 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
             )
             return
         self._modify_records(resource, record_id, round(float(amount), 2))
+
+    # Order stages: Pending (preparing) -> Ready for pick-up -> Completed (picked up), or Cancelled.
+    _ORDER_STATUSES = (StatusID.PENDING, StatusID.READY, StatusID.COMPLETED, StatusID.CANCELLED)
+
+    def _set_order_status(self, order_id: int, status_id: object) -> None:
+        """PATCH /api/orders/<id> {status_id}: move an order to another stage."""
+        if type(status_id) is not int or status_id not in self._ORDER_STATUSES:
+            self._send_json({"status": "error", "message": "Unknown order status."}, 400)
+            return
+        try:
+            with _database().transaction() as session:
+                result = session.update(
+                    DatabaseTables.ORDERS, {DatabaseColumns.STATUS_ID: status_id},
+                    where=(SQLCondition(DatabaseColumns.ORDER_ID, order_id),),
+                )
+        except sqlite3.Error:
+            logger.exception("Could not update order status")
+            self._send_json({"status": "error", "message": "Could not update the order."}, 500)
+            return
+        if result.rowcount != 1:
+            self._send_json({"status": "error", "message": "Record was not found."}, 404)
+            return
+        self._send_json({"status": "ok"}, 200)
 
     def _record_route(self) -> tuple[str | None, int | None]:
         parts = urlsplit(self.path).path.strip("/").split("/")
@@ -894,6 +922,7 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
                 "quantity": cart_item.quantity,
                 "subtotal": round(cart_item.getSubtotal(), 2),
                 "stock_quantity": cart_item.item.stockQuantity,
+                "image_path": cart_item.item.imagePath,
             }
             for item_id, cart_item in cart.items.items()
         ]
@@ -1039,6 +1068,25 @@ class LocalTestRequestHandler(SimpleHTTPRequestHandler):
         if not is_valid_cvv(cvv):
             errors["cvv"] = "Enter the 3-digit CVC."
         return errors
+
+    def _my_orders(self, method: str) -> bool:
+        """GET /api/my-orders: the signed-in customer's orders with items and payment."""
+        if urlsplit(self.path).path != "/api/my-orders":
+            return False
+        if method != "GET":
+            self._send_json({"status": "error", "message": "Not found."}, 404)
+            return True
+        customer_id = self._session_customer_id("Sign in with a customer account to see your orders.")
+        if customer_id is None:
+            return True
+        try:
+            result = OrderService(DB_PATH).forCustomer(customer_id)
+        except sqlite3.Error:
+            logger.exception("Could not load orders")
+            self._send_json({"status": "error", "message": "Database error."}, 500)
+            return True
+        self._send_json({"status": "ok", **result.data}, 200)
+        return True
 
     def _my_checkout(self, method: str) -> bool:
         """POST /api/my-checkout {item_ids, cardholder_name, card_number, expiration_date, cvv}.

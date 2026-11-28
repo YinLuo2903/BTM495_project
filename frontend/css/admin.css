@@ -618,7 +618,7 @@
 .adm-g-customers .adm-tr { grid-template-columns: 1.5fr 1fr 2.2fr 1.2fr 0.7fr 92px; }
 .adm-g-events .adm-tr { grid-template-columns: 2.2fr 1.5fr 2fr 0.9fr 1fr 132px; }
 .adm-g-appointments .adm-tr { grid-template-columns: 0.5fr 2.4fr 1.4fr 1.5fr 1fr 132px; }
-.adm-g-orders .adm-tr { grid-template-columns: 0.8fr 1.5fr 1.3fr 1.2fr 0.9fr 1fr 92px; }
+.adm-g-orders .adm-tr { grid-template-columns: 0.7fr 1.4fr 1.2fr 1.2fr 0.9fr 1.4fr 92px; }
 .adm-g-payments .adm-tr { grid-template-columns: 0.9fr 0.7fr 1.4fr 1.3fr 1.2fr 1fr 1fr 92px; }
 .adm-g-inventory .adm-tr { grid-template-columns: 2.4fr 1.2fr 1fr 1fr 1.2fr 132px; }
 
@@ -1166,7 +1166,7 @@ a.adm-kpi:focus-visible {
 }
 
 .adm-trends {
-  margin-bottom: 18px;
+  margin: 18px 0 0;
 }
 
 .adm-range {
@@ -1328,4 +1328,16 @@ a.adm-kpi:focus-visible {
   .adm-glance {
     grid-template-columns: 1fr;
   }
+}
+
+.adm-hero .adm-dry-run {
+  margin-top: 12px;
+  color: var(--ink);
+  background: rgb(255 255 255 / 85%);
+  text-decoration: none;
+}
+
+.adm-badge.adm-b-ready {
+  color: #1f5a8a;
+  background: #e6f0fa;
 }
